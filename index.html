@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/src/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite App</title>
+  </head>
+  <body className=''>
+    <div id="root"></div>
+    <script>
+      
+      if('navigator' in window) {
+        navigator.serviceWorker.register('./sw.js')
+          .then(registration => {
+            console.log(registration.scope)
+          })
+          .catch(err => {
+            console.error(err.message)
+          })
+      }
+
+      if(history.scrollRestoration) {
+        history.scrollRestoration = "manual"
+      }
+
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,36 @@
+.ripple {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  /* background-color: var(--bg-clr, #0000); */
+  --ripple-width: 10px;
+  --ripple-height: 10px;
+  --ripple-half: -.5px;
+}
+
+.ripple > * {
+ /* background-color: transparent; */
+ z-index: 2;
+}
+
+.ripple-child {
+  z-index: 1;
+  border-radius: 50%;
+  background-color: var(--ripple-clr, red);
+  width: var(--ripple-width);
+  height: var(--ripple-height);
+  pointer-events: none;
+  animation: ripple .65s ease-out 1 forwards
+}
+
+@keyframes ripple {
+  0% {
+    transform: translate(var(--ripple-half), var(--ripple-half)) scale(1); 
+    opacity: .9;
+  }
+
+  100% {
+    transform: translate(var(--ripple-half), var(--ripple-half)) scale(15); 
+    opacity: 0;
+  }
+}
