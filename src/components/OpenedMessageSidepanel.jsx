@@ -90,10 +90,12 @@ function OpenedMessageSidepanel({ user, active }) {
   return (
     <div onClick={ev => ev.stopPropagation()} className={`${active ? 'z-20' : 'z-10'} absolute absolute-center max-w-[22rem] w-[22rem] p-2 flex flex-col gap-2 items-center lg:w-full h-full overflow-y-auto shadow-lg`}>
       <div className='w-full bg-white shadow-sidenav-b rounded-md pt-2 flex flex-col justify-center items-center gap-2'>
-        <UserImage id={user._id} src={user?.profile} size='xl' />
-        <div className='flex flex-col w-full pb-2 items-center'>
-          <span className='text-lg'>{user?.username}</span>
-          <p className='text-sm leading-none text-gray-500 text-center w-full'>a very fun guy</p>
+        <div className='flex w-full px-2 gap-2'>
+          <UserImage className='bg-transparent shadow-none' id={user._id} src={user?.profile} size='xl' />
+          <div className='flex-1 flex flex-col justify-end w-full pb-3'>
+            <span className='text-lg font-bold text-sky-500'>{user?.username}</span>
+            <p className='text-sm leading-none text-gray-500 w-full'>a very fun guy</p>
+          </div>
         </div>
         <div className='pr-4 border-t flex justify-between p-2 w-full items-center'>
           <span className='text-sm font-medium '>Add to Fevourites</span>

@@ -12,6 +12,7 @@ import OpenedMessageSidepanel from '@/components/OpenedMessageSidepanel'
 import {screens} from 'tailwindcss/defaultTheme'
 import Ripple from '@/components/Ripple/Ripple'
 import UserImage from '@/components/UserImage'
+import Panel from '@/components/Panel'
 import useMultipleLoading from '@/hooks/useMultipleLoading'
 import useSocket from '@/hooks/useSocket'
 import axios from "@/api/axios"
@@ -136,21 +137,6 @@ function Home() {
     }
   }, [])
 
-  const fevourites = useMemo(() => {
-    let fevs =  messagesWithUsers.filter(el => {
-      if(auth.user?.fevourites.includes(el.id)) return true
-      return false
-    })
-    return fevs
-  }, [messagesWithUsers, auth])
-
-  const others = useMemo(() => {
-    let other = messagesWithUsers.filter(el => {
-      if(!auth.user?.fevourites.includes(el.id)) return true
-      return false
-    })
-    return other
-  }, [messagesWithUsers, auth])
 
   useEffect(() => {
     if(pathname.startsWith('/message')) {
@@ -290,59 +276,15 @@ function Home() {
       messagesWithUsers,
       setMessagesWithUsers,
       openedMessages,
-      typing
+      typing,
+      showMessage
     }}>
       <main className="max-w-[1366px] relative m-auto h-screen grid grid-cols-12 bg-gradient-to-r">
-        <div className='col-start-1 col-span-12 sm:col-end-6 md:col-end-5 lg:col-end-4 flex flex-col justify-start p-1 pr-4 lg:p-2 bg-gradient-to-r from-black/20 via-black/10 to-white shadw-lg'>
-
-          <div className='rounded-md bg-white flex justify-between h-12 items-center shadow-sidenav-b'>
-            <Ripple type='button' onClick={() => navigate('drawer')} className='h-full w-10 lg:w-12 flex items-center justify-center'>
-              <CgMenuLeft className='text-2xl pointer-events-none' />
-            </Ripple>
-            <span className='tracking-wider text-lg'>LESSFACE</span>
-            <button className='h-full w-10 lg:w-12 flex items-center justify-center'>
-              <CgSearch className='text-xl pointer-events-none' />  
-            </button>  
-          </div>
-
-          <div className='flex-1 flex flex-col gap-1 py-1 lg:py-2 overflow-y-auto'>
-            {
-              !loadingMessage ?
-                <>
-                  {!fevourites.length && !others.length && (<div className='flex flex-1 justify-center items-center'>no chats</div>)}
-                  {
-                    fevourites.length ?
-                      <div className='flex flex-col p-2 gap-1 border-b border-gray-800/30'>
-                        <span className='text-base case uppercase'>fevourites</span>
-                        {
-                          fevourites.map(item => {                                                                                                                                                                                            
-                            return <UserImgWithMessage active={
-                              showMessage == 'left-0' && openedMessages.find(el => el.id == item.id)?.active} key={item.id
-                            } online={item.online} user={item.user} unread={item.unread} message={item.messages?.[0] || 'no messages yet'} />
-                          })
-                        }
-                      </div>
-                    : ''
-                  }
-                  {
-                    others.length ?
-                      <>
-                        {
-                          others.map(item => {
-                            return <UserImgWithMessage active={
-                              showMessage == 'left-0' && openedMessages.find(el => el.id == item.id)?.active} key={item.id
-                            } online={item.online} user={item.user} unread={item.unread} message={item.messages?.[0] || 'no messages yet'} />
-                          })
-                        }
-                      </>
-                    : ''
-                  }
-                </>
-              : <UserImgWithMessageSkeleton />
-            }
-          </div>
-
-        </div>
+        {
+          !loadingMessage ?
+            <Panel />
+          : <UserImgWithMessageSkeleton />
+        }
         <div className={`${showMessage} z-40 w-full h-full bg-white fixed top-0 sm:relative sm:col-start-6 sm:col-end-13 md:col-start-5 lg:col-start-4 lg:col-end-10`}>
           {
             !loadingMessage ?

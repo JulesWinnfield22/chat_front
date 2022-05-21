@@ -6,7 +6,9 @@ function UserImgWithMessageSkeleton() {
   function gen() {
     let ary = Array(10).fill(0)
     return (
-      <div className='flex flex-col w-full gap-1 lg:gap-2 h-full'>
+      <div className='flex flex-col p-2 w-[18rem] gap-1 lg:gap-2 h-full'>
+        <div className='h-12 bg-gray-600 rounded-md'></div>
+        <p className='w-24 h-4 rounded-full bg-gray-400 my-2'></p>
         {
           ary.map((el, idx) => {
             return (
