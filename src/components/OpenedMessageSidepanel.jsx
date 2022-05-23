@@ -1,8 +1,12 @@
-import {memo, useEffect, useMemo, useState} from 'react'
+import {memo, useEffect, useRef, useMemo, useState} from 'react'
+import { useLocation, useNavigate, } from 'react-router-dom'
 import UserImage from '@/components/UserImage.jsx'
 import Ripple from '@/components/Ripple/Ripple'
 import useSocket from '@/hooks/useSocket'
 import {useStore} from '@/store/store'
+import { useMessages } from '@/pages/Home'
+import {screens} from 'tailwindcss/defaultTheme'
+
 
 function Toggle({ handler, value = false, className}) {
   
@@ -73,7 +77,49 @@ function Gif({active}) {
   )
 }
 
-function OpenedMessageSidepanel({ user, active }) {
+function OpenedMessageSidepanel() {
+  const [showSidePanel, setShowSidePanel] = useState(false)
+  
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const { openedMessages, messagesWithUsers } = useMessages()
+
+  useEffect(() => {
+    const observer = new ResizeObserver((entries, observer) => {
+      entries.forEach(entry => {
+        const width = entry.contentRect.width
+        if(pathname == '/info' && width > parseInt(screens.lg)) {
+          navigate(-1)
+          setShowSidePanel(false)
+        } else if(pathname == '/info' && width < parseInt(screens.lg)) {
+          setShowSidePanel(true)
+        } else {
+          setShowSidePanel(false)
+        }
+        // if(width)
+      })
+    })
+
+    observer.observe(document.body)
+    return () => {
+      observer.unobserve(document.body)
+    }
+  }, [pathname])
+
+  return (
+    <div onClick={() => navigate(-1)} className={`${showSidePanel ? 'left-0' : 'left-full'} fixed w-full h-screen top-0 lg:left-0 lg:h-full z-50 lg:relative col-start-10 col-end-13 bg-black/30 lg:bg-transparent lg:bg-gradient-to-r lg:from-white lg:via-black/10 lg:to-black/20`}>
+      {
+        openedMessages.map(item => {
+          return (
+            <View user={(messagesWithUsers.find(el => el.id == item.id))?.user} active={item.active} key={item.id} />
+          )
+        })
+      }
+    </div> 
+  )
+}
+
+function View({ user, active }) {
   const [navNames] = useState(['files', 'photos', 'music', 'gif'])
   const [activeItem, setActiveItem] = useState(navNames[0])
   const { auth, setAuth } = useStore()

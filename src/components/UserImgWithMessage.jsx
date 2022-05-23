@@ -1,11 +1,12 @@
 import { memo, useMemo } from 'react'
 import UserImage from '@/components/UserImage'
+import { useMessages } from '@/pages/Home'
 import { Link, useNavigate } from 'react-router-dom'
 import Ripple from '@/components/Ripple/Ripple'
 
 function UserImageWithMessage({active, user, unread, message, online = false}) {
 	const navigate = useNavigate()
-
+	const { typing } = useMessages()
 	return (
 		<Ripple
 			// type='a'
@@ -29,8 +30,13 @@ function UserImageWithMessage({active, user, unread, message, online = false}) {
 					}
 				</div>
 				<div className={`${active ? 'text-gray-100' : 'text-gray-600'} group-hover:text-gray-100 w-full h-1/2 lg:h-auto flex justify-between items-center pr-1  text-sm font-normal tracking-wider`}>
-					<span className='text-ellipsis whitespace-nowrap overflow-hidden flex-1'>{message?.message || 'no messages yet'}</span>
-					<time className='flex-shrink-0 text-xs' dateTime={message?.createdAt}>{new Date(message?.createdAt)?.toLocaleString().replace(/\s.*/, '') || ''}</time>
+					<span className='text-ellipsis whitespace-nowrap overflow-hidden flex-1'>
+						{
+							typing?.includes(user._id) ? 'typing...' :
+							message?.message || 'no messages yet'
+						}
+					</span>
+					<time className='flex-shrink-0 text-xs' dateTime={message?.createdAt}>{new Date(message?.createdAt)?.toDateString() || ''}</time>
 				</div>
 			</div>
 		</Ripple>

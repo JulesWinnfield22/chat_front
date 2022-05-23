@@ -7,7 +7,7 @@ import UserImgWithMessage from '@/components/UserImgWithMessage'
 import { useLocation, useNavigate, } from 'react-router-dom'
 
 function Panel() {
-  const { messagesWithUsers, openedMessages, showMessage } = useMessages()
+  const { messagesWithUsers, openedMessages } = useMessages()
   const { auth, setAuth } = useStore()
   const navigate = useNavigate()
 
@@ -49,7 +49,7 @@ function Panel() {
               {
                 fevourites.map(item => {                                                                                                                                                                                            
                   return <UserImgWithMessage active={
-                    showMessage == 'left-0' && openedMessages.find(el => el.id == item.id)?.active} key={item.id
+                    openedMessages.find(el => el.id == item.id)?.active} key={item.id
                   } online={item.online} user={item.user} unread={item.unread} message={item.messages?.[0] || 'no messages yet'} />
                 })
               }
@@ -62,7 +62,7 @@ function Panel() {
               {
                 others.map(item => {
                   return <UserImgWithMessage active={
-                    showMessage == 'left-0' && openedMessages.find(el => el.id == item.id)?.active} key={item.id
+                    openedMessages.find(el => el.id == item.id)?.active} key={item.id
                   } online={item.online} user={item.user} unread={item.unread} message={item.messages?.[0] || 'no messages yet'} />
                 })
               }

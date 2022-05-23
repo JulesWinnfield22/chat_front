@@ -13,6 +13,7 @@ import { useMessages } from '@/pages/Home'
 import { useStore } from '@/store/store'
 import { formatMessagesByTime } from '@/helper/helper'
 import { useWhenVisible } from './whenVisible'
+import {screens} from 'tailwindcss/defaultTheme'
 
 function isThereNotSeen() {
   return !!document.querySelector('.not-seen')
@@ -36,19 +37,22 @@ function showNotSeenMessage(el, options) {
   return m
 }
 
-function OpenedMessage({ messageId, ...props}) {
-  const { messagesWithUsers } = useMessages()
+function OpenedMessage({back, togglePanel}) {
+  const { messagesWithUsers, openedMessages } = useMessages()
   const [loading, check] = useMultipleLoading(true, 2)
-  
-  let messages = useMemo(() => {
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const [showMessage, setShowMessage] = useState('')
+
+  function messa(messageId) {
     let m = messagesWithUsers.find(el => el.id == messageId)
     return {
       ...m,
       skip: m.messages.length
     }
-  },[messagesWithUsers])
+  }
 
-  const unreadCount = useMemo(() => {
+  const unreadCount = (messageId) => {
     let m = messagesWithUsers.find(el => el.id == messageId)
 
     let count = m.messages.reduce((sum, payload) => {
@@ -56,27 +60,50 @@ function OpenedMessage({ messageId, ...props}) {
       return sum
     }, 0)
 
-    check()
     return count
-  }, [messagesWithUsers])
+  }
 
-  const formatedMessages = useMemo(() => {
-    let m = formatMessagesByTime(messages.messages || [])
-    check()
+  const formatedMessages = (messages) => {
+    let m = formatMessagesByTime(messages || [])
     return m
-  }, [messages])
+  }
+
+  useEffect(() => {
+    const observer = new ResizeObserver((entries, observer) => {
+      entries.forEach(entry => {
+        const width = entry.contentRect.width
+        if(width < parseInt(screens.sm) && openedMessages.length && pathname.startsWith('/message')) {
+          setShowMessage('left-0')
+        } else if(width > parseInt(screens.sm) && pathname.startsWith('/message')) {
+          setShowMessage('left-0')
+        } else if(width < parseInt(screens.sm)) {
+          setShowMessage('left-full')
+        }
+      })
+    })
+    
+    observer.observe(document.body)
+    return () => {
+      observer.unobserve(document.body)
+    }
+  }, [pathname, openedMessages])
   
   return (
-    <>
+    <div className={`${showMessage} z-40 w-full h-full bg-white fixed top-0 sm:relative sm:col-start-6 sm:col-end-13 md:col-start-5 lg:col-start-4 lg:col-end-10`}>
       {
-        !loading ?
-          <View {...props} unreadCount={unreadCount} messages={{
-            ...messages,
-            messages: formatedMessages
-          }} />
-        : ''
+        openedMessages.map(item => {
+          let mes = messa(item.id)
+          let messages = formatedMessages(mes.messages)
+
+          return (
+            <View back={back} togglePanel={togglePanel} messageId={item.id} active={item.active} key={item.id} unreadCount={unreadCount(item.id)} messages={{
+              ...mes,
+              messages
+            }} />
+          )
+        })
       }
-    </>
+    </div>
   )
 }
 
@@ -96,11 +123,6 @@ function View({messages, back, active, togglePanel, unreadCount}) {
   const { pathname } = useLocation()
   const socket = useSocket()
   const whenVisible = useWhenVisible()
-  // useEffect(() => {
-  //   if(active && doneWatch && isThereNotSeen) {
-  //     addWatcher()
-  //   }
-  // }, [active])
 
   useLayoutEffect(() => {
     let pos = sessionStorage.getItem(`${messages.id}_position`)
@@ -108,12 +130,9 @@ function View({messages, back, active, togglePanel, unreadCount}) {
   }, [])
 
   useEffect(() => {
-    console.log('skip', messages.skip, messages.unread, doneWatch)
     socket.emit('get-more-messages', messages.id, messages.skip, messages.unread, async (err, response) => {
 
       if(err) console.log(err)
-
-      console.log(response)
 
       if(response?.length) {
         setLoadingMessages(false)
@@ -172,7 +191,6 @@ function View({messages, back, active, togglePanel, unreadCount}) {
       let height = target.scrollHeight - target.offsetHeight
       if(-target.scrollTop == height && !done) {
         setLoadingMessages(true)
-        console.log('skippp', skip)
         socket.emit('get-more-messages', messages.id, skip, 0, (err, moreMessages) => {
           if(moreMessages.length) {
             moreMessages[0].last = true
@@ -260,8 +278,6 @@ function View({messages, back, active, togglePanel, unreadCount}) {
       const notSeen = openedMessage.current.querySelectorAll('.not-seen')
       let message = showNotSeenMessage(lastSeen)
 
-      console.log(lastSeen)
-      
       message?.scrollIntoView()
       if(notSeen.length > 1) setShowGoToBottom(true)
 

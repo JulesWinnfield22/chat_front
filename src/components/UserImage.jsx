@@ -55,7 +55,7 @@ function UserImage({id = 'abc', className = '', online = false, rounded = true, 
   }, [src])
   
   return (
-    <div className={`${getSize(size, rounded, square)} ${!src ? 'p-1' : ''} ${online ? 'border-sky-400 border': ''} bg-gray-300 relative flex-grow-0 flex-shrink-0 ${className}`}>
+    <div className={`${getSize(size, rounded, square)} ${!src ? 'p-1' : ''} ${online ? 'border-sky-400 border': ''} relative flex-grow-0 flex-shrink-0 ${className}`}>
       <img className={`max-w-full object-cover`} src={img} alt="" /> 
       {
 				online ?
