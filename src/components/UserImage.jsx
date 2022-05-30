@@ -3,7 +3,7 @@ import { createAvatar } from '@dicebear/avatars'
 import * as style from '@dicebear/avatars-bottts-sprites'
 
 function getSize(size, rounded, square) {
-  let classs = square ? ' ' : 'rounded-full shadow-md '
+  let classs = square ? ' ' : 'rounded-full '
   switch(size) {
     case 'md':
        classs += 'w-14 h-14'
@@ -55,7 +55,7 @@ function UserImage({id = 'abc', className = '', online = false, rounded = true, 
   }, [src])
   
   return (
-    <div className={`${getSize(size, rounded, square)} ${!src ? 'p-1' : ''} ${online ? 'border-sky-400 border': ''} relative flex-grow-0 flex-shrink-0 ${className}`}>
+    <div className={`${getSize(size, rounded, square)} ${!src ? 'p' : ''} ${online ? 'border-sky-400 border': ''} relative flex-grow-0 flex-shrink-0 ${className}`}>
       <img className={`max-w-full object-cover`} src={img} alt="" /> 
       {
 				online ?

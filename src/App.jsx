@@ -6,6 +6,8 @@ import Login from '@/pages/Login'
 import {useStore} from '@/store/store'
 import useRefreshToken from '@/hooks/useRefreshToken'
 import useAxiosInterceptor from '@/hooks/useAxiosInterceptor'
+import Loading from '@/components/Loading'
+import IdleTimer from '@/idleDetector/IdleTimer'
 
 function ProtectedRoute({ children }) {
   const [loading, setLoading] = useState(true)
@@ -14,7 +16,6 @@ function ProtectedRoute({ children }) {
   const {auth} = useStore()
 
   useEffect(() => {
-    console.log('hello', auth)
     if(auth?.accessToken) {
       setLoading(false)
     } else {
@@ -30,7 +31,7 @@ function ProtectedRoute({ children }) {
   return (
     <>
       {
-        !loading ? children : <p>loading...</p>
+        !loading ? children : <Loading />
       }
     </>
   )
@@ -43,7 +44,9 @@ function App() {
       <Route path='/login' element={<Login />} />
       <Route path='*' element={
         <ProtectedRoute>
-          <Home />
+          <IdleTimer>
+            <Home />
+          </IdleTimer>
         </ProtectedRoute>
       } />
     </Routes>

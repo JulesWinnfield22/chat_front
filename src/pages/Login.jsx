@@ -3,6 +3,7 @@ import axios from "@/api/axios"
 import {useStore} from '@/store/store'
 import useRefreshToken from '@/hooks/useRefreshToken'
 import {useLocation, useNavigate} from 'react-router-dom'
+import Loading from '@/components/Loading'
 
 const onInput = (cb, cbError) => (ev) => {
   cbError('')
@@ -117,36 +118,37 @@ function Login() {
   return (
     <>
       {
-        !loading && 
-        <main className='flex justify-center items-center w-full h-screen overflow-y-auto'>
-          <div className='w-full sm:max-w-[25rem] flex flex-col gap-4 rounded-lg shadow p-2 sm:p-4'>
-            <div className="text-center">
-              <h1 className='text-register-fs font-bold text-gray-600'>Log In<i className="text-sky-400">.</i></h1>
-              <p className="text-gray-600 justify-center font-medium text-sm px-2 flex gap-1">dont have an account?<a onClick={() => navigate('/register')} className="text-sky-500 cursor-pointer underline">create one</a></p>
+        !loading ?
+          <main className='flex justify-center items-center w-full h-screen overflow-y-auto'>
+            <div className='w-full sm:max-w-[25rem] flex flex-col gap-4 rounded-lg shadow p-2 sm:p-4'>
+              <div className="text-center">
+                <h1 className='text-register-fs font-bold text-gray-600'>Log In<i className="text-sky-400">.</i></h1>
+                <p className="text-gray-600 justify-center font-medium text-sm px-2 flex gap-1">dont have an account?<a onClick={() => navigate('/register')} className="text-sky-500 cursor-pointer underline">create one</a></p>
+              </div>
+              <form ref={form} className='p-2 sm:p-3 shadow-md border-2 rounded-lg border-sky-300 flex flex-col gap-2'>
+                <div className='w-full flex flex-col self-start flex-1'>
+                  <label className={`${usernameOrEmailError ? 'border-red-500 error' : 'focus-within:border-sky-300 '} form-input-label`}>
+                    <input value={usernameOrEmail} onChange={onInput(setUsernameOrEmail, setUsernameOrEmailError)} className="form-input" placeholder="@username or fake@email.com" type="sernae or email" name="usernameOrEmail" id="" />
+                  </label>
+                  {
+                    usernameOrEmailError &&
+                    <p className="px-1 text-sm text-red-500 lowercase">{usernameOrEmailError}</p>
+                  }       
+                </div>
+                <div className='w-full flex flex-col self-start flex-1'>
+                  <label className={`${passwordError ? 'border-red-500 error' : 'focus-within:border-sky-300 '} form-input-label`}>
+                    <input value={password} onChange={onInput(setPassword, setPasswordError)} className="form-input" placeholder="password" type="password" name="password" id="" />
+                  </label> 
+                  {
+                    passwordError &&
+                    <p className="px-1 text-sm text-red-500 lowercase">{passwordError}</p>
+                  }          
+                </div>
+                <button type="button" onClick={login} className='uppercase w-1/2 ml-auto h-10 rounded-lg text-sm tracking-wide mt-4 bg-sky-700 text-white'>login</button>
+              </form>
             </div>
-            <form ref={form} className='p-2 sm:p-3 shadow-md border-2 rounded-lg border-sky-300 flex flex-col gap-2'>
-              <div className='w-full flex flex-col self-start flex-1'>
-                <label className={`${usernameOrEmailError ? 'border-red-500 error' : 'focus-within:border-sky-300 '} form-input-label`}>
-                  <input value={usernameOrEmail} onChange={onInput(setUsernameOrEmail, setUsernameOrEmailError)} className="form-input" placeholder="@username or fake@email.com" type="sernae or email" name="usernameOrEmail" id="" />
-                </label>
-                {
-                  usernameOrEmailError &&
-                  <p className="px-1 text-sm text-red-500 lowercase">{usernameOrEmailError}</p>
-                }       
-              </div>
-              <div className='w-full flex flex-col self-start flex-1'>
-                <label className={`${passwordError ? 'border-red-500 error' : 'focus-within:border-sky-300 '} form-input-label`}>
-                  <input value={password} onChange={onInput(setPassword, setPasswordError)} className="form-input" placeholder="password" type="password" name="password" id="" />
-                </label> 
-                {
-                  passwordError &&
-                  <p className="px-1 text-sm text-red-500 lowercase">{passwordError}</p>
-                }          
-              </div>
-              <button type="button" onClick={login} className='uppercase w-1/2 ml-auto h-10 rounded-lg text-sm tracking-wide mt-4 bg-sky-700 text-white'>login</button>
-            </form>
-          </div>
-        </main>
+          </main>
+        : <Loading />
       }
     </>
   )

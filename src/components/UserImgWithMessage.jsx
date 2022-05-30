@@ -4,14 +4,17 @@ import { useMessages } from '@/pages/Home'
 import { Link, useNavigate } from 'react-router-dom'
 import Ripple from '@/components/Ripple/Ripple'
 
-function UserImageWithMessage({active, user, unread, message, online = false}) {
+function UserImageWithMessage({active, user, unread, message, online = false, className}) {
 	const navigate = useNavigate()
 	const { typing } = useMessages()
 	return (
 		<Ripple
 			// type='a'
-			className={`${active ? 'bg-gray-900' : ''} group rounded-lg 
-			cursor cursor-pointer w-full hover:bg-gray-900 flex items-center p-2 flex-grow-0`}
+			style={{
+				boxShadow: '0 0 7px -4px #000'
+			}}
+			className={`${active ? 'bg-gray-900' : 'bg-black/20'} group 
+			cursor cursor-pointer w-full hover:bg-gray-900 flex items-center p-2 flex-grow-0 ${className}`}
 			onClick={
 				() => !active ? navigate(`/message/${user._id}`, {
 					// replace: true

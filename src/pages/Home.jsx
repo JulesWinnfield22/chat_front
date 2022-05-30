@@ -1,12 +1,16 @@
 import  { useState, useReducer, useEffect, createContext, useContext, useCallback, useLayoutEffect } from 'react'
 import OpenedMessage from '@/components/OpenedMessage'
+import GroupOpenedMessage from '@/components/GroupOpenedMessage'
 import UserImgWithMessageSkeleton from '@/skeleton/UserImgWithMessageSkeleton'
 import messageReducer from '@/pages/messageReducer'
+import groupReducer from '@/pages/groupReducer'
 import { useLocation, useNavigate, } from 'react-router-dom'
 import OpenedMessageSidepanel from '@/components/OpenedMessageSidepanel'
+import GroupOpenedMessageSidepanel from '@/components/GroupOpenedMessageSidepanel'
 import {screens} from 'tailwindcss/defaultTheme'
-import Panel from '@/components/Panel'
+import Panel from '@/components/Panel/Panel'
 import Drawer from '@/components/Drawer'
+import Loading from '@/components/Loading'
 import useMultipleLoading from '@/hooks/useMultipleLoading'
 import useSocket from '@/hooks/useSocket'
 
@@ -15,6 +19,8 @@ export const useMessages = () => useContext(Context)
 
 function Home() {
   const [messagesWithUsers, setMessagesWithUsers] = useReducer(messageReducer, [])
+  const [groupMessages, setGroupMessages] = useReducer(groupReducer, [])
+
   const [typing, setTyping] = useReducer((state, payload) => {
     switch(payload.type) {
       case 'typing':  
@@ -31,7 +37,9 @@ function Home() {
   }, [])
 
   const [openedMessages, setOpenedMessages] = useState([])
-  const [loadingMessage, check] = useMultipleLoading(true, 2)
+  const [openedGroupMessages, setOpenedGroupMessages] = useState([])
+  const [chatType, setChatType] = useState('regular')
+  const [loadingMessage, check] = useMultipleLoading(true, 3)
   const socket = useSocket()
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -43,7 +51,7 @@ function Home() {
       const getAllMessages = async () => {
         return new Promise((res, rej) => {
           socket.emit('get-all-messages', (err, messages) => {
-            console.log(err, 'err')
+            check()
             if(err) res(false)
             else {
               setMessagesWithUsers({
@@ -51,22 +59,38 @@ function Home() {
                 data: messages
               })
               res(true)
-              check()
             }
+          })
+        })
+      }
+
+      const getAllGroupMessages = async () => {
+        return new Promise((res, rej) => {
+          socket.emit('get-all-group-messages', (err, messages) => {
+            check()
+            if(!err) {
+              setGroupMessages({
+                type: 'initial',
+                data: messages
+              })
+            }
+            res(true)
           })
         })
       }
        
       await getAllMessages()
-      
+      await getAllGroupMessages()
+
       socket.emit('online-users', (err, users) => {
+        console.log(err, users)
+        check()
         if(err) console.log(err)
         else {
           setMessagesWithUsers({
             type: 'create',
             data: users
           })
-          check()
         }
       })
   
@@ -97,10 +121,10 @@ function Home() {
       })
     })
 
-    socket.on('user-disconnected', id => {
+    socket.on('user-disconnected', (id, active) => {
       setMessagesWithUsers({
         type: 'offline',
-        data: id
+        data: {id, active}
       })
     })
 
@@ -108,6 +132,33 @@ function Home() {
       setMessagesWithUsers({
         type: 'push',
         data: {id: message.from, messages:message}
+      })
+    })
+
+    socket.on('group-message', message => {
+      setGroupMessages({
+        type: 'push',
+        data: {id: message.to, messages: message}
+      })
+    })
+
+    socket.on('group-member-online', (group, id) => {
+      setGroupMessages({
+        type: 'member-online',
+        data: {
+          group,
+          member: id
+        }
+      })
+    })
+
+    socket.on('group-member-offline', (group, id) => {
+      setGroupMessages({
+        type: 'member-offline',
+        data: {
+          group,
+          member: id
+        }
       })
     })
 
@@ -122,6 +173,10 @@ function Home() {
       })
     })
 
+    // socket.emit('join', '628cf5b15596f58f52339575', (err, message) => {
+    //   console.log(err, message)
+    // })
+
     return () => {
       socket.removeAllListeners()
     }
@@ -130,7 +185,8 @@ function Home() {
 
   useEffect(() => {
     if(pathname.startsWith('/message')) {
-      
+      setChatType('regular')
+      setOpenedGroupMessages([])
       let id = (pathname + '/').match(/\/message\/(.+?)\//)?.[1]
 
       if(!openedMessages.find(el => el.id == id)) {
@@ -157,43 +213,65 @@ function Home() {
         })
       ])
 
+    } else if(pathname.startsWith('/group')) {
+      setChatType('group')
+      setOpenedMessages([])
+      let id = (pathname + '/').match(/\/group\/(.+?)\//)?.[1]
+      
+      if(!openedGroupMessages.find(el => el.id == id)) {
+        setOpenedGroupMessages([
+          ...openedGroupMessages.map(el => {
+            el.active = false
+            return el
+          }),
+          {
+            active: true,
+            id
+          }
+        ])
+        return
+      }
+
+      setOpenedGroupMessages([
+        ...openedGroupMessages.map(el => {
+          if(el.id == id) {
+            el.active = true
+          } else el.active = false
+
+          return el
+        })
+      ])
     } else if(pathname == '/') {
       setOpenedMessages([])
+      setOpenedGroupMessages([])
+      setChatType('regular')
     }
   }, [pathname])
-
-  const togglePanel = useCallback(() => {
-    if(window.innerWidth < parseInt(screens.lg)) {
-      navigate('/info')
-    }
-  }, [])
-
-  const toggleMessage = useCallback(() => {
-    setOpenedMessages([
-      ...openedMessages.map(el => {
-        el.active = false
-        return el
-      })
-    ])
-    navigate(-1)
-  }, [])
-
+ 
   return (
     <Context.Provider value={{
       messagesWithUsers,
       setMessagesWithUsers,
       openedMessages,
-      typing
+      typing,
+      chatType,
+      groupMessages,
+      setGroupMessages,
+      openedGroupMessages
     }}>
-      <main className="max-w-[1366px] relative m-auto h-screen grid grid-cols-12 bg-gradient-to-r">
+      <main className="max-w-[1366px] relative m-auto h-screen grid grid-cols-12 bg-gradient-to-r bg-white">
         {
           !loadingMessage ?
             <>
               <Panel />
-              <OpenedMessage back={toggleMessage} togglePanel={togglePanel} />
+              <div className='fixed z-40 sm:relative sm:col-start-6 sm:col-end-13 md:col-start-5 lg:col-start-4 lg:col-end-10'>
+                <OpenedMessage />
+                <GroupOpenedMessage />
+              </div>
               <OpenedMessageSidepanel />
+              <GroupOpenedMessageSidepanel />
             </>
-          : 'loading'
+          : <Loading />
         }
         {
           <Drawer />

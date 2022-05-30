@@ -197,7 +197,6 @@ function formatMessage(messages) {
 					return true
 				}	else return false
 			})
-			alert(JSON.stringify(ms))
 			m.push({
 				time: time,
 				messages: ms,
@@ -286,8 +285,167 @@ function formatMessagesByTime(messages) {
 	}
 }
 
+function formatGroupMessage(thatdays) {
+	let groupId = thatdays[0].to
+
+  let time = [...thatdays.reduce((time, payload) => {
+    time.add(formatHoureAndMinuteTime(payload.createdAt))
+    return time
+  }, new Set())].sort()
+
+  let froms = time.reduce((times, payload) => {
+
+    let response = thatdays
+      .filter(el => formatHoureAndMinuteTime(el.createdAt) == payload)
+      .reduce((messages, message) => {
+
+        if(!messages[message.from]) {
+          messages[message.from] = [message]
+        } else {
+          messages[message.from].push(message)
+        }
+
+        return messages
+      }, {})
+
+    if(Object.keys(response).length > 1) {
+      let all = []
+
+      Object
+        .keys(response)
+        .forEach(key => {
+          all.push(...response[key])
+        })
+
+      all = all.sort((a, b) => {
+        if(a.createdAt > b.createdAt) return 1
+        else if(a.createdAt < b.createdAt) return -1
+        else return 0
+      })
+
+      all.push({from: 'done'})
+
+      let from = ''
+      let mess = []
+      
+      for (let i = 0; i < all.length; i++) {
+        from = all[i].from
+
+        if(all[i + 1].from == 'done') {
+          mess.push(all[i])
+          times.push({
+            time: payload,
+            ...all[i],
+            messages: mess
+          })
+
+          break
+        } else if(all[i + 1]?.from == from) {
+          mess.push(all[i])
+        } else {
+          mess.push(all[i])
+          times.push({
+            time: payload,
+            ...all[i],
+            messages: mess
+          })
+
+          mess = []
+        }
+
+      }
+
+    } else {
+      Object
+        .keys(response)
+        .forEach(key => {
+          times.push({
+            time: payload,
+            ...response[key][0],
+            messages: response[key]
+          })
+        })
+    }
+    return times
+  }, [])
+
+
+  return froms
+}
+
+function formatGroupMessagesByTime(mess) {
+
+	const messages = []
+
+	let years = mess.reduce((years, payload) => {
+		let date = new Date(payload.createdAt)
+		years.add(date.getFullYear())
+		return years
+	}, new Set())   
+	
+	years = [...years].sort()
+	
+	years.map(year => {
+	
+		messages.push({
+			year,
+			messages: []
+		})
+	
+		let months = mess
+			.filter(el => (new Date(el.createdAt)).getFullYear() == year)
+			.reduce((months , payload) => {
+				let date = new Date(payload.createdAt)
+				months.add(date.getMonth() + 1)
+				return months
+			}, new Set())
+	
+		months = [...months].sort()
+	
+		months.map(month => {
+	
+			let ymessages = messages.find(el => el.year == year)
+	
+			ymessages.messages.push({
+				month,
+				messages: []
+			})
+	
+			let dates = mess
+				.filter(el => (new Date(el.createdAt)).getFullYear() == year && (new Date(el.createdAt)).getMonth() + 1 == month)
+				.reduce((dates , payload) => {
+					let date = new Date(payload.createdAt)
+					dates.add(date.getDate())
+					return dates
+				}, new Set())
+	
+			dates = [...dates].sort()
+	
+			dates.map(date => {
+				let mmessages = ymessages.messages.find(el => el.month == month)
+	
+				let thatdays = mess.filter(el => {
+					let mDate = new Date(el.createdAt)
+					return mDate.getFullYear() == year && mDate.getMonth() + 1 == month && mDate.getDate() == date
+				})
+	
+				mmessages.messages.push({
+					date,
+					messages: formatGroupMessage(thatdays)
+				})
+	
+			})
+		})
+	
+	})
+
+	return messages
+}
+
 export {
 	formatMessagesByTime,
+	formatGroupMessagesByTime,
+	formatGroupMessage,
 	formatMessage,
 	formatHoureAndMinuteTime
 }

@@ -1,23 +1,18 @@
-import { useRef, useEffect, useTransition, useLayoutEffect, useState, useMemo } from 'react'
+import { useMessages } from '@/pages/Home'
+import { formatGroupMessagesByTime } from '@/helper/helper'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef, useLayoutEffect } from 'react'
+import { screens } from 'tailwindcss/defaultTheme'
 import { CgArrowLeft, CgChevronDoubleDown } from 'react-icons/cg'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { FaSpinner } from 'react-icons/fa'
-import { IoMdSend } from 'react-icons/io'
-import TextareaAutosize from 'react-textarea-autosize'
 import UserImage from '@/components/UserImage'
-import useMultipleLoading from '@/hooks/useMultipleLoading'
 import Message from '@/components/Message'
 import StickyDate from '@/components/StickyDate'
+import TextareaAutosize from 'react-textarea-autosize'
+import { IoMdSend } from 'react-icons/io'
 import useSocket from '@/hooks/useSocket'
-import { useMessages } from '@/pages/Home'
+import { FaSpinner } from 'react-icons/fa'
 import { useStore } from '@/store/store'
-import { formatMessagesByTime } from '@/helper/helper'
 import { useWhenVisible } from './whenVisible'
-import {screens} from 'tailwindcss/defaultTheme'
-
-function isThereNotSeen() {
-  return !!document.querySelector('.not-seen')
-}
 
 function showNotSeenMessage(el, options) {
   let m = document.querySelector('.not-seen-messages')
@@ -37,26 +32,29 @@ function showNotSeenMessage(el, options) {
   return m
 }
 
-function OpenedMessage() {
-  const { messagesWithUsers, openedMessages, chatType } = useMessages()
-  const [loading, check] = useMultipleLoading(true, 2)
+function GroupOpenedMessage() {
+  const { groupMessages, openedGroupMessages, chatType } = useMessages()
+  // const [loading, check] = useMultipleLoading(true, 2)
   const { pathname } = useLocation()
-  const navigate = useNavigate()
+  // const navigate = useNavigate()
   const [showMessage, setShowMessage] = useState('')
+  const { auth } = useStore()
 
   function messa(messageId) {
-    let m = messagesWithUsers.find(el => el.id == messageId)
+    let m = groupMessages.find(el => el.id == messageId) || {}
     return {
       ...m,
-      skip: m.messages.length
+      skip: m?.messages?.length || 0
     }
   }
 
   const unreadCount = (messageId) => {
-    let m = messagesWithUsers.find(el => el.id == messageId)
-
-    let count = m.messages.reduce((sum, payload) => {
-      if(payload.from == messageId && !payload.seen ) sum++
+    let m = groupMessages.find(el => el.id == messageId)
+    let ls = auth.user.groups.find(el => el.id == messageId)?.lastSeenMessage
+    
+    let count = m?.messages?.reduce((sum, payload) => {
+      if(!ls) sum++
+      else if(new Date(payload.createdAt) > new Date(ls) && payload.from != auth.user._id) sum++
       return sum
     }, 0)
 
@@ -64,7 +62,7 @@ function OpenedMessage() {
   }
 
   const formatedMessages = (messages) => {
-    let m = formatMessagesByTime(messages || [])
+    let m = formatGroupMessagesByTime(messages || [])
     return m
   }
 
@@ -72,11 +70,11 @@ function OpenedMessage() {
     const observer = new ResizeObserver((entries, observer) => {
       entries.forEach(entry => {
         const width = entry.contentRect.width
-        if(width < parseInt(screens.sm) && openedMessages.length && pathname.startsWith('/message')) {
+        if(width < parseInt(screens.sm) && openedGroupMessages.length && pathname.startsWith('/group')) {
           setShowMessage('left-0')
-        } else if(width > parseInt(screens.sm) && pathname.startsWith('/message')) {
+        } else if(width > parseInt(screens.sm) && pathname.startsWith('/group')) {
           setShowMessage('left-0')
-        } else if(width < parseInt(screens.sm) && !openedMessages.length ) {
+        } else if(width < parseInt(screens.sm)) {
           setShowMessage('left-full')
         }
       })
@@ -86,17 +84,17 @@ function OpenedMessage() {
     return () => {
       observer.unobserve(document.body)
     }
-  }, [pathname, openedMessages])
+  }, [pathname, openedGroupMessages])
   
   return (
-    <div className={`${showMessage} ${chatType == 'regular' ? 'z-50' : 'z-40 hidden' } w-full h-full bg-white fixed top-0 sm:absolute`}>
+    <div className={`${showMessage} ${chatType == 'group' ? 'z-50' : 'z-40 hidden' } w-full h-full bg-white fixed top-0 sm:absolute`}>
       {
-        openedMessages.map(item => {
+        openedGroupMessages.map(item => {
           let mes = messa(item.id)
           let messages = formatedMessages(mes.messages)
 
           return (
-            <View messageId={item.id} active={item.active} key={item.id} unreadCount={unreadCount(item.id)} messages={{
+            <View groupId={item.id} active={item.active} unreadCount={unreadCount(item.id)} key={item.id} messages={{
               ...mes,
               messages
             }} />
@@ -107,67 +105,80 @@ function OpenedMessage() {
   )
 }
 
-function View({messages, active, unreadCount}) {
-  const openedMessage = useRef(null)
-  const textarea = useRef(null)
-  const [loadingMessages, setLoadingMessages] = useState(true)
-  const [done, setDone] = useState(false)
-  const [addWatcher, setAddWatcher] = useState(false)
+function isThereNotSeen() {
+  return !!document.querySelector('.not-seen')
+}
+
+function View({groupId, messages, active, unreadCount}) {
+  const openedGroupMessage = useRef(null)
   const [message, setMessage] = useState('')
-  const [doneWatch, setDoneWatch] = useState(false)
-  const { setMessagesWithUsers, messagesWithUsers, typing } = useMessages()
-
-  const [showGoToBottom, setShowGoToBottom] = useState(false)
-  const { auth } = useStore()
-  const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const [loadingMessages, setLoadingMessages] = useState(true)
+  const textarea = useRef(null)
+  const { groupMessages, setGroupMessages, chatType } = useMessages()
+  const [addWatcher, setAddWatcher] = useState(false)
   const socket = useSocket()
+  const [done, setDone] = useState(false)
+  const [showGoToBottom, setShowGoToBottom] = useState(false)
+  const { auth, setAuth } = useStore()
   const whenVisible = useWhenVisible()
+  const [doneWatch, setDoneWatch] = useState(false)
+  const navigate = useNavigate()
 
-  const togglePanel = () => {
-    if(window.innerWidth < parseInt(screens.lg)) {
-      navigate('/info')
+  useEffect(() => {
+    if(active) {
+      socket.emit('opened-group', groupId , (err, online) => {
+        console.log(err, online)
+        if(!err) {
+          console.log(online)
+          setGroupMessages({
+            type: 'member-online',
+            data: {
+              group: groupId,
+              member: online
+            }
+          })
+        }
+      })
     }
-  }
 
-  const back = () =>  navigate(-1)
+    return () => {
+      socket.emit('closed-group', groupId)
+    }
+  }, [active])
 
   useLayoutEffect(() => {
     let pos = sessionStorage.getItem(`${messages.id}_position`)
-    if(pos) openedMessage.current.scrollTop = pos
+    if(pos) openedGroupMessage.current.scrollTop = pos
   }, [])
 
   useEffect(() => {
     if(messages.skip < 20) {
-      console.log('skip', messages.unread, messages.skip)
-      socket.emit('get-more-messages', messages.id, messages.skip, messages.unread, async (err, response) => {
-
+      console.log('skip group', messages.unread, messages.skip)
+      socket.emit('get-more-group-messages', messages.id, messages.skip, messages.unread, async (err, response) => {
+        console.log(err, response)
         if(err) console.log(err)
-  
-        if(response?.length) {
+        
+        if(response.length) {
           setLoadingMessages(false)
-          response[0].last = true
-          setMessagesWithUsers({
+          // response[0].last = true
+          setGroupMessages({
             type: 'push',
             data: {
               id: messages.id,
               messages: response
             }
           })
-  
+
           if(isThereNotSeen()) {
-            if(addWatcher) {
-              setAddWatcher('')
-              setAddWatcher(true)
-            } else {
-              setAddWatcher(true)
-            }
+            setAddWatcher(true)
           } else {
             setDoneWatch(true)
           }
+          
+          if(response.length < 20) setDone(true)
         } else {
           setLoadingMessages(false)
-  
+          setDone(true)
           if(isThereNotSeen()) {
             setAddWatcher(true)
           } else {
@@ -176,7 +187,6 @@ function View({messages, active, unreadCount}) {
         }
       })
     } else {
-      setLoadingMessages(false)
       if(isThereNotSeen()) {
         setAddWatcher(true)
       } else {
@@ -186,19 +196,11 @@ function View({messages, active, unreadCount}) {
   }, [])
 
   useEffect(() => {
-    /* 
-      since when we update the messages we are spicing the
-      message and creating a new object the reference to the old one
-      is still being used by the scroll handler so initialize the 
-      skip and manually update it. and maybe the magic value [20]
-      should be changed to a variable
-    */
-
     let skip = messages.skip // ? messages.unread + messages.skip : messages.skip
     const scrollHandler = function({ target }) {
 
       let currentPosition = target.scrollTop
-      if(currentPosition < sessionStorage.getItem(`${messages.id}_position`)) {
+      if(currentPosition < sessionStorage.getItem(`${messages.id}_position`) && unreadCount == 0) {
         setShowGoToBottom(true)
       } else {
         setShowGoToBottom(false)
@@ -209,18 +211,19 @@ function View({messages, active, unreadCount}) {
       let height = target.scrollHeight - target.offsetHeight
       if(-target.scrollTop == height && !done) {
         setLoadingMessages(true)
-        socket.emit('get-more-messages', messages.id, skip, 0, (err, moreMessages) => {
+        socket.emit('get-more-group-messages', messages.id, skip, 0, (err, moreMessages) => {
           if(moreMessages.length) {
-            moreMessages[0].last = true
+            // moreMessages?.allMessaegs[0].last = true
             setLoadingMessages(false)
-            if(moreMessages.length < 20) setDone(true)
-            setMessagesWithUsers({
+            if(moreMessages?.length < 20) setDone(true)
+            setGroupMessages({
               type: 'push',
               data: {
                 id: messages.id,
                 messages: moreMessages
               }
             })
+
           } else {
             setLoadingMessages(false)
             setDone(true)
@@ -230,18 +233,88 @@ function View({messages, active, unreadCount}) {
       }
     }
 
-    let el = openedMessage.current
+    let el = openedGroupMessage.current
     el.addEventListener('scroll', scrollHandler)
 
     return () => {
       el.removeEventListener('scroll', scrollHandler)
     }
   }, [done, messages])
+  
+
+  function whenVisibleCallback(entry) {
+    let ca = entry.target.dataset['createdat']
+    console.log(`%c${ca}`, 'color: red')
+    let groups = [...auth.user.groups]
+
+    let update = false
+    let group = groups.find(el => el.id == groupId)
+
+    if(!group.lastSeenMessage) {
+      group.lastSeenMessage = ca
+      update = true
+    } else if(new Date(ca) > new Date(group.lastSeenMessage)) {
+      group.lastSeenMessage = ca
+      update = true
+    }
+
+    if(update) {
+      setAuth({
+        type: 'update',
+        data: {
+          name: 'groups',
+          value: groups
+        }
+      })
+
+      setGroupMessages({
+        type: 'update_seen',
+        data: {
+          id: groupId,
+          createdAt: ca
+        }
+      })
+
+      socket.emit('group-seen', groupId, ca, (err, response) => {
+        if(!err) {
+          
+        }
+      })
+    }
+
+    if(!isThereNotSeen()) {
+      setShowGoToBottom(false)
+    }
+  }
+
+  const getLastSeen = () => {
+    let m = groupMessages.find(el => el.id == messages.id)
+    let ls = auth.user.groups.find(el => el.id == groupId)?.lastSeenMessage
+    let lastseen
+
+    if(!ls) {
+      let cc = m.messages.concat().reverse()
+      for(let i = 0; i < cc.length; i++) {
+        if(cc[i].from != auth.user._id) {
+          return cc[i].createdAt
+        }
+      }
+    }
+
+    for(let i = 0; i < m.messages.length; i++) {
+      if(new Date(m.messages[i].createdAt) > new Date(ls) && m.messages[i].from != auth.user._id) {
+        lastseen = m.messages[i].createdAt
+        break
+      }
+    }
+
+    return lastseen
+  }
 
   useEffect(() => {
     if(doneWatch) {
       // TODO this is not working as expected so change it
-      const notSeen = openedMessage.current.querySelectorAll('.not-seen')
+      const notSeen = openedGroupMessage.current.querySelectorAll('.not-seen')
 
       // if(notSeen.length > 1) setShowGoToBottom(true)
 
@@ -249,7 +322,7 @@ function View({messages, active, unreadCount}) {
         if(!el['watched']) {
           el['watched'] = 'watched'
           whenVisible(el, whenVisibleCallback, {
-            root: openedMessage.current,
+            root: openedGroupMessage.current,
             threshold: 1
           })
         }
@@ -257,57 +330,21 @@ function View({messages, active, unreadCount}) {
     }
   }, [messages])
 
-  function whenVisibleCallback(entry) {
-    let ca = entry.target.dataset['createdat']
-    socket.emit('seen', messages.id, ca, (err, response) => {
-      if(!err) {
-        setMessagesWithUsers({
-          type: 'update_seen',
-          data: {
-            id: messages.id,
-            createdAt: ca
-          }
-        })
-
-        if(!isThereNotSeen()) {
-          setShowGoToBottom(false)
-        }
-      }
-    })
-  }
-
-  const getLastSeen = () => {
-    let m = messagesWithUsers.find(el => el.id == messages.id)
-
-    let lastseen
-    m.messages.forEach((el) => {
-      if(!el.seen && el.from == messages.id) {
-        if(lastseen && el.createdAt < lastseen) {
-          lastseen = el.createdAt
-        } else {
-          lastseen = el.createdAt
-        }
-      }
-    })
-
-    return lastseen
-  }
-
   useEffect(() => {
     if(addWatcher) {
       let lastNotSeen = getLastSeen()
-      const lastSeen = openedMessage.current.querySelector(`p[data-createdat='${lastNotSeen}']`)
-      const notSeen = openedMessage.current.querySelectorAll('.not-seen')
+      const lastSeen = openedGroupMessage.current.querySelector(`p[data-createdat='${lastNotSeen}']`)
+      const notSeen = openedGroupMessage.current.querySelectorAll('.not-seen')
       let message = showNotSeenMessage(lastSeen)
-
       message?.scrollIntoView()
+
       if(notSeen.length > 1) setShowGoToBottom(true)
 
       notSeen.forEach(el => {
         if(!el['watched']) {
           el['watched'] = 'watched'
           whenVisible(el, whenVisibleCallback, {
-            root: openedMessage.current,
+            root: openedGroupMessage.current,
             threshold: 1
           })
         }
@@ -320,53 +357,60 @@ function View({messages, active, unreadCount}) {
   function goToBottom(checkShowMessage = true) {
     if(checkShowMessage) {
       let el = showNotSeenMessage()
-      if(el && unreadCount > 0 && openedMessage.current.scrollTop + openedMessage.current.offsetHeight < el.offsetTop) {
+      if(el && unreadCount > 0 && openedGroupMessage.current.scrollTop + openedGroupMessage.current.offsetHeight < el.offsetTop) {
         el.remove()
         let lastNotSeen = getLastSeen()
-        const notSeen = openedMessage.current.querySelector(`p[data-createdat='${lastNotSeen}']`)
+        const notSeen = openedGroupMessage.current.querySelector(`p[data-createdat='${lastNotSeen}']`)
         el = showNotSeenMessage(notSeen)
         el?.scrollIntoView()
       } else if(unreadCount) {
         let lastNotSeen = getLastSeen()
-        const notSeen = openedMessage.current.querySelector(`p[data-createdat='${lastNotSeen}']`)
+        const notSeen = openedGroupMessage.current.querySelector(`p[data-createdat='${lastNotSeen}']`)
         el = showNotSeenMessage(notSeen)
         el?.scrollIntoView()
       } else {
-        openedMessage.current.scrollTop = openedMessage.current.scrollHeight - openedMessage.current.offsetHeight
+        openedGroupMessage.current.scrollTop = openedGroupMessage.current.scrollHeight - openedGroupMessage.current.offsetHeight
       }
     } else {
-      openedMessage.current.scrollTop = openedMessage.current.scrollHeight - openedMessage.current.offsetHeight
+      openedGroupMessage.current.scrollTop = openedGroupMessage.current.scrollHeight - openedGroupMessage.current.offsetHeight
     }
   }
+
+  const togglePanel = () => {
+    if(window.innerWidth < parseInt(screens.lg)) {
+      navigate('/infogroup')
+    }
+  }
+
+  const back = () =>  navigate(-1)
 
   function send() {
     if(message) {
 
       let tempId = Math.floor(Math.random() * 100)
 
-      setMessagesWithUsers({
+      setGroupMessages({
         type: 'push',
         data: {
-          id: messages.id,
+          id: groupId,
           messages: {
             _id: tempId,
             status: 'pending',
             from: auth.user._id,
-            to: messages.id,
+            to: groupId,
             message,
             createdAt: new Date().toLocaleString(),
-            seen: false
           }
         }
       })
 
-      socket.emit('private-message', {to: messages.id, message}, (err, response) => {
+      socket.emit('group-message', {to: groupId, message}, (err, response) => {
         if(err) console.log(err)
         else {
-          setMessagesWithUsers({
+          setGroupMessages({
             type: 'message-delevered',
             data: {
-              id: messages.id,
+              id: groupId,
               tempId,
               message: response
             }
@@ -380,34 +424,6 @@ function View({messages, active, unreadCount}) {
     }
   }
 
-  useEffect(() => {
-    if(message) {
-      socket.emit('typing', messages.id)
-    } else {
-      socket.emit('done_typing', messages.id)
-    }
-  }, [message])
-
-  const getLastOnline = (time) => {
-    let now = new Date()
-    let lastOnline = new Date(time)
-
-    let t = Math.floor((now - lastOnline) / (1000 * 60)) // changing it in to min
-
-    console.log(t, 'tt')
-
-    if(t < 3) {
-      return 'just now'
-    } else if (t < 60) {
-      return `${t}min ago`
-    } else if (t < 60 * 24) {
-      let hours = Math.floor(t / 60)
-      return `${hours}h ago`
-    } else { 
-      return lastOnline.toDateString().toLowerCase() 
-    }
-  }
-
   return (
     <div
       className={`${active ? 'opened-message z-20' : 'hidden z-10'} w-full flex flex-col h-full bg-white absolute absolute-center`}
@@ -417,21 +433,25 @@ function View({messages, active, unreadCount}) {
           <CgArrowLeft className='text-xl pointer-events-none' />
         </button>
         <div onClick={togglePanel} className='flex-1 flex items-center h-full'>
-          <UserImage id={messages?.id} src={messages.user?.profile} size='xs' />
-          <div className='ml-2 flex flex-col w-full h-full'>
-            <span className='text-base font-medium h-1/2'>{messages.user.username}</span>
-            <span className='text-xs text-gray-600 tracking-wider h-1/2'>{
-              typing?.includes(messages?.id) ?
-                'typing'
-              : messages.online ?
-                'online'
-              : 'active ' + getLastOnline(messages?.user?.active) ?? 'active long time ago'
-            }</span>
+          <UserImage id={messages?.id} size='xs' />
+          <div className='ml-2 flex py-1 flex-col w-full h-full'>
+            <span className='text-base font-medium h-1/2'>{messages.group.name}</span>
+            <span className='text-xs text-gray-600 tracking-wider h-1/2'>
+              {
+                messages.group.members.length
+              } members, 
+
+              {
+                messages.online && messages.online.length? 
+                  <span> {messages.online.length} movie buffs are online</span>
+                : ''
+              } 
+            </span>
           </div>
         </div>
       </div>
       <div className='relative flex-1 overflow-hidden'>
-        <div ref={openedMessage} className='w-full h-full px-2 py-2 flex flex-col-reverse gap-2 overflow-y-scroll'>
+        <div ref={openedGroupMessage} className='w-full h-full px-2 py-2 flex flex-col-reverse gap-2 overflow-y-scroll'>
           {
             messages.messages.concat().reverse().map(({year, messages}) => {
               return messages.concat().reverse().map(({month, messages}) => {
@@ -439,12 +459,12 @@ function View({messages, active, unreadCount}) {
                   return (
                     <div id={'date-' + date} key={`${year}-${month}-${date}`} className='flex flex-col gap-2 z-0'>
                       {
-                        openedMessage?.current ?
-                          <StickyDate root={openedMessage?.current} date={`${year}-${month}-${date}`} />
+                        openedGroupMessage?.current ?
+                          <StickyDate root={openedGroupMessage?.current} date={`${year}-${month}-${date}`} />
                         : ''
                       }
                       {
-                        <Message messages={messages} />
+                        <Message group={groupId} messages={messages} />
                       }
                     </div>
                   )
@@ -470,7 +490,7 @@ function View({messages, active, unreadCount}) {
           <button onClick={goToBottom} className={`${showGoToBottom ? 'go-to-bottom' : ''} absolute text-2xl pt-2 text-white bg-gray-700 w-8 h-8 rounded-full flex items-center justify-center bottom-4 right-4`}>
             <CgChevronDoubleDown />
             {
-              unreadCount?
+              unreadCount ?
               <span className='text-xs pointer-events-none font-bold p-1 shadow-md rounded-full absolute bottom-5 flex justify-center items-center bg-blue-500'>
                 {
                   unreadCount
@@ -494,4 +514,4 @@ function View({messages, active, unreadCount}) {
   )
 }
 
-export default OpenedMessage
+export default GroupOpenedMessage

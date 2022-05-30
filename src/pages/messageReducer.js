@@ -1,4 +1,3 @@
-import data from './data'
 
 function messageReducer(state, payload) {
   switch(payload.type) {
@@ -59,11 +58,12 @@ function create(state, users) {
     state.forEach(el => {
       if(online_users_ids.includes(el.id)) {
         el.online = true
-      }
+      }                       
     })
 
     return state
   }
+
   if(!ids.includes(users._id)) {
     state.push({
       id: users._id.toString(),
@@ -76,11 +76,13 @@ function create(state, users) {
     return state
   }
 
-  state.forEach(el => {
-    if(el.id == users._id) {
-      el.online = true
+  for(let i = 0; i < state.length; i++) {
+    if(state[i].id == users._id) {
+      state[i].online = true
+      state[i].user.active = users.active
+      break
     }
-  })
+  }
 
   return state
 }
@@ -139,21 +141,25 @@ function messageDelevered(state, data) {
   if(!found) return state
 
   for(let i = 0; i < found.messages.length; i++) {
-    found.messages[i].createdAt = data.message.createdAt
-    found.messages[i].status = 'delevered'
-    found.messages[i].updatedAt = data.message.updatedAt
-    found.messages[i]._id = data.message._id
-    break
+    if(found.messages[i]._id == data.tempId) {
+      found.messages[i].createdAt = data.message.createdAt
+      found.messages[i].status = 'delevered'
+      found.messages[i].updatedAt = data.message.updatedAt
+      found.messages[i]._id = data.message._id
+      break
+    }
   }
 
   return state
 }
 
-function offline(state, id) {
+function offline(state, data) {
 
   for(let i = 0; i < state.length; i++) {
-    if(state[i].id == id) {
+    if(state[i].id == data.id) {
       state[i].online = false
+
+      if(data.active) state[i].user.active = active
       break
     }
   }
@@ -162,3 +168,8 @@ function offline(state, id) {
 }
 
 export default messageReducer
+export {
+  merge,
+  push,
+  messageDelevered
+}
