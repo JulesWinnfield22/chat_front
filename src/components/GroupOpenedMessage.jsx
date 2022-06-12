@@ -4,8 +4,11 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import { screens } from 'tailwindcss/defaultTheme'
 import { CgArrowLeft, CgChevronDoubleDown } from 'react-icons/cg'
+import { HiOutlineDotsVertical } from 'react-icons/hi'
 import UserImage from '@/components/UserImage'
 import Message from '@/components/Message'
+import useDropdown from '@/components/Dropdown'
+import Ripple from '@/components/Ripple/Ripple'
 import StickyDate from '@/components/StickyDate'
 import TextareaAutosize from 'react-textarea-autosize'
 import { IoMdSend } from 'react-icons/io'
@@ -50,8 +53,12 @@ function GroupOpenedMessage() {
 
   const unreadCount = (messageId) => {
     let m = groupMessages.find(el => el.id == messageId)
-    let ls = auth.user.groups.find(el => el.id == messageId)?.lastSeenMessage
+    let group = auth.user.groups.find(el => el.id == messageId)
     
+    if(!group) return 0
+
+    let ls = group?.lastSeenMessage
+
     let count = m?.messages?.reduce((sum, payload) => {
       if(!ls) sum++
       else if(new Date(payload.createdAt) > new Date(ls) && payload.from != auth.user._id) sum++
@@ -114,7 +121,7 @@ function View({groupId, messages, active, unreadCount}) {
   const [message, setMessage] = useState('')
   const [loadingMessages, setLoadingMessages] = useState(true)
   const textarea = useRef(null)
-  const { groupMessages, setGroupMessages, chatType } = useMessages()
+  const { groupMessages, setGroupMessages, openedGroupMessages, setOpenedGroupMessages, chatType } = useMessages()
   const [addWatcher, setAddWatcher] = useState(false)
   const socket = useSocket()
   const [done, setDone] = useState(false)
@@ -123,13 +130,12 @@ function View({groupId, messages, active, unreadCount}) {
   const whenVisible = useWhenVisible()
   const [doneWatch, setDoneWatch] = useState(false)
   const navigate = useNavigate()
+  const [Dropdown, toggleDropdown] = useDropdown()
 
   useEffect(() => {
     if(active) {
       socket.emit('opened-group', groupId , (err, online) => {
-        console.log(err, online)
         if(!err) {
-          console.log(online)
           setGroupMessages({
             type: 'member-online',
             data: {
@@ -153,9 +159,7 @@ function View({groupId, messages, active, unreadCount}) {
 
   useEffect(() => {
     if(messages.skip < 20) {
-      console.log('skip group', messages.unread, messages.skip)
       socket.emit('get-more-group-messages', messages.id, messages.skip, messages.unread, async (err, response) => {
-        console.log(err, response)
         if(err) console.log(err)
         
         if(response.length) {
@@ -250,6 +254,8 @@ function View({groupId, messages, active, unreadCount}) {
     let update = false
     let group = groups.find(el => el.id == groupId)
 
+    if(!group) return
+
     if(!group.lastSeenMessage) {
       group.lastSeenMessage = ca
       update = true
@@ -289,8 +295,12 @@ function View({groupId, messages, active, unreadCount}) {
 
   const getLastSeen = () => {
     let m = groupMessages.find(el => el.id == messages.id)
-    let ls = auth.user.groups.find(el => el.id == groupId)?.lastSeenMessage
+    let group = auth.user.groups.find(el => el.id == groupId)
     let lastseen
+
+    if(!group) return ''
+
+    let ls = group?.lastSeenMessage
 
     if(!ls) {
       let cc = m.messages.concat().reverse()
@@ -313,6 +323,9 @@ function View({groupId, messages, active, unreadCount}) {
 
   useEffect(() => {
     if(doneWatch) {
+      let group = auth.user.groups.find(el => el.id == groupId)
+
+      if(!group) return
       // TODO this is not working as expected so change it
       const notSeen = openedGroupMessage.current.querySelectorAll('.not-seen')
 
@@ -332,6 +345,10 @@ function View({groupId, messages, active, unreadCount}) {
 
   useEffect(() => {
     if(addWatcher) {
+      let group = auth.user.groups.find(el => el.id == groupId)
+
+      if(!group) return
+
       let lastNotSeen = getLastSeen()
       const lastSeen = openedGroupMessage.current.querySelector(`p[data-createdat='${lastNotSeen}']`)
       const notSeen = openedGroupMessage.current.querySelectorAll('.not-seen')
@@ -424,6 +441,62 @@ function View({groupId, messages, active, unreadCount}) {
     }
   }
 
+  function joinOrLeave() {
+    let member = messages.group.members.includes(auth.user._id)
+
+    socket.emit('join', groupId, '', (err, response) => {
+      if(member) {
+        setAuth({
+          type: 'update',
+          data: {
+            name: 'groups',
+            value: response?.groups
+          }
+        })
+
+
+        if(messages.group.restriction) {
+          navigate('/', {
+            replace: true
+          })
+
+          let r = openedGroupMessages.filter(el => el.id != groupId)
+          setOpenedGroupMessages(r)
+          setGroupMessages({
+            type: 'remove',
+            data: groupId
+          })
+        } else {
+          setGroupMessages({
+            type: 'remove_member',
+            data: {
+              id: groupId,
+              member: auth.user._id
+            }
+          })
+        }
+      } else {
+        setAuth({
+          type: 'update',
+          data: {
+            name: 'groups',
+            value: [...(new Set([...auth.user.groups, {id: groupId, lastSeenMessage: Date.now(), pending: false}]))]
+          }
+        })
+
+        
+        setGroupMessages({
+          type: 'add_member',
+          data: {
+            id: groupId,
+            members: response.members
+          }
+        })
+      }
+    })
+
+  }
+
   return (
     <div
       className={`${active ? 'opened-message z-20' : 'hidden z-10'} w-full flex flex-col h-full bg-white absolute absolute-center`}
@@ -438,16 +511,36 @@ function View({groupId, messages, active, unreadCount}) {
             <span className='text-base font-medium h-1/2'>{messages.group.name}</span>
             <span className='text-xs text-gray-600 tracking-wider h-1/2'>
               {
-                messages.group.members.length
-              } members, 
-
+                messages.group.members.length > 1 ?
+                  <span>
+                    {messages.group.members.length} members,
+                  </span>
+                : <span>
+                    {messages.group.members.length} member,
+                  </span>
+              } 
               {
                 messages.online && messages.online.length? 
-                  <span> {messages.online.length} movie buffs are online</span>
+                  <span> {messages.online.length} {messages.online.length > 1 ? messages.group.membersnickName || '' + ' are' : ''} online</span>
                 : ''
               } 
             </span>
           </div>
+        </div>
+        <div className='relative'>
+          <Ripple onClick={toggleDropdown} className='w-10 h-10 dropdown-handler rounded-full flex items-center justify-center ml-auto'>
+            <HiOutlineDotsVertical />
+          </Ripple>
+          <Dropdown>
+            <div className='flex  min-w-[10rem]'>
+              <Ripple onClick={joinOrLeave} className='p-2 w-full text-sm hover:bg-gray-800 hover:text-sky-400'>
+                {
+                  messages.group.members.includes(auth.user._id) ?
+                  'leave group' : 'join'
+                }
+              </Ripple>
+            </div>
+          </Dropdown>
         </div>
       </div>
       <div className='relative flex-1 overflow-hidden'>

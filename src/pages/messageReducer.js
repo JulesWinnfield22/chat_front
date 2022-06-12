@@ -8,6 +8,8 @@ function messageReducer(state, payload) {
       return create([...state], payload.data)
     case 'offline':
       return offline([...state], payload.data)
+    case 'remove':
+      return [...state].filter(el => el.id != payload.data)
     case 'message-delevered':
       return messageDelevered([...state], payload.data)
     case 'update_seen':
@@ -159,7 +161,7 @@ function offline(state, data) {
     if(state[i].id == data.id) {
       state[i].online = false
 
-      if(data.active) state[i].user.active = active
+      if(data.active) state[i].user.active = data.active
       break
     }
   }

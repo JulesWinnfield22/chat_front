@@ -31,11 +31,11 @@ function Dm({ active }) {
       {!fevourites.length && !others.length && (<div className='flex flex-1 justify-center items-center'>no chats</div>)}
       {
         fevourites.length ?
-          <div className='flex flex-col p-2 gap-1 border-b border-gray-800/30'>
-            <span className='text-base case uppercase'>fevourites</span>
+          <div className='flex flex-col'>
+            <span className='border-b text-sm bg-gray-800 text-sky-400 p-2 uppercase'>fevourites</span>
             {
-              fevourites.map(item => {                                                                                                                                                                                            
-                return <UserImgWithMessage className='rounded-lg' active={isActive(item.id)} key={item.id
+              fevourites.map(item => {                                                                                                                           
+                return <UserImgWithMessage className='' active={isActive(item.id)} key={item.id
                 } online={item.online} user={item.user} unread={item.unread} message={item.messages?.[0] || 'no messages yet'} />
               })
             }
@@ -44,14 +44,15 @@ function Dm({ active }) {
       }
       {
         others.length ?
-          <>
+          <div className='flex flex-col'>
+            <span className='border-y text-sm bg-gray-800 text-sky-400 p-2 uppercase'>not so fevourites</span>
             {
               others.map(item => {
                 return <UserImgWithMessage active={isActive(item.id)} key={item.id
                 } online={item.online} user={item.user} unread={item.unread} message={item.messages?.[0] || 'no messages yet'} />
               })
             }
-          </>
+          </div>
         : ''
       }
     </div>

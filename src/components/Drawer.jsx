@@ -1,9 +1,12 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useStore } from '@/store/store'
-import { FaSignOutAlt, FaCogs } from 'react-icons/fa'
+import { FaSignOutAlt, FaCog } from 'react-icons/fa'
+import { MdGroupAdd } from 'react-icons/md'
 import Ripple from '@/components/Ripple/Ripple'
 import UserImage from '@/components/UserImage'
+import CreateGroup from '@/components/CreateGroup'
+import usePortal from '@/hooks/usePortal'
 import axios from "@/api/axios"
 
 function Drawer() {
@@ -11,6 +14,8 @@ function Drawer() {
   const { pathname } = useLocation()
   const [show, setShow] = useState(false)
   const { auth } = useStore()
+  const [Modal, nav, hide] = usePortal('creategroup')
+
 
   useEffect(() => {
     if(pathname == '/drawer') {
@@ -42,6 +47,12 @@ function Drawer() {
     }
   }
 
+  function createGroup() {
+    navigate('/creategroup', {
+      replace: true
+    })
+  }
+
   return (
     <>
       {
@@ -56,13 +67,21 @@ function Drawer() {
                 </div>
               </div>
               <Ripple color='#ddd8' type='div' className='mt-1 gap-2 hover:bg-black/50 cursor-pointer p-2 text-base font-semibold text-gray-300 flex items-center'>  
-                <FaCogs className='text-2xl' />
+                <FaCog className='w-6 text-xl' />
                 Settings
               </Ripple>
+              <Ripple onClick={nav} color='#ddd8' type='div' className='mt-1 gap-2 hover:bg-black/50 cursor-pointer p-2 text-base font-semibold text-gray-300 flex items-center'>  
+                <MdGroupAdd className='w-6 text-2xl' />
+                Create Group
+                <Modal>
+                  <CreateGroup />
+                </Modal>
+              </Ripple>
               <Ripple onClick={logout} color='#ddd8' type='div' className='mt-1 gap-2 hover:bg-black/50 cursor-pointer p-2 text-base font-semibold text-gray-300 flex items-center'>  
-                <FaSignOutAlt className='text-xl text-red-500' />
+                <FaSignOutAlt className='w-6 text-xl text-red-500' />
                 Logout
               </Ripple>
+
             </div>
           </div>
         : ''

@@ -10,7 +10,9 @@ import GroupOpenedMessageSidepanel from '@/components/GroupOpenedMessageSidepane
 import {screens} from 'tailwindcss/defaultTheme'
 import Panel from '@/components/Panel/Panel'
 import Drawer from '@/components/Drawer'
+import CreateGroup from '@/components/CreateGroup'
 import Loading from '@/components/Loading'
+import Restriction from '@/components/Restriction'
 import useMultipleLoading from '@/hooks/useMultipleLoading'
 import useSocket from '@/hooks/useSocket'
 
@@ -39,7 +41,7 @@ function Home() {
   const [openedMessages, setOpenedMessages] = useState([])
   const [openedGroupMessages, setOpenedGroupMessages] = useState([])
   const [chatType, setChatType] = useState('regular')
-  const [loadingMessage, check] = useMultipleLoading(true, 3)
+  const [loadingMessage, check] = useMultipleLoading(true, 2)
   const socket = useSocket()
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -51,7 +53,6 @@ function Home() {
       const getAllMessages = async () => {
         return new Promise((res, rej) => {
           socket.emit('get-all-messages', (err, messages) => {
-            check()
             if(err) res(false)
             else {
               setMessagesWithUsers({
@@ -60,6 +61,7 @@ function Home() {
               })
               res(true)
             }
+            check()
           })
         })
       }
@@ -67,33 +69,20 @@ function Home() {
       const getAllGroupMessages = async () => {
         return new Promise((res, rej) => {
           socket.emit('get-all-group-messages', (err, messages) => {
-            check()
             if(!err) {
               setGroupMessages({
                 type: 'initial',
                 data: messages
               })
+              res(true)
             }
-            res(true)
+            check()
           })
         })
       }
        
       await getAllMessages()
-      await getAllGroupMessages()
-
-      socket.emit('online-users', (err, users) => {
-        console.log(err, users)
-        check()
-        if(err) console.log(err)
-        else {
-          setMessagesWithUsers({
-            type: 'create',
-            data: users
-          })
-        }
-      })
-  
+      await getAllGroupMessages()  
     })()
     
     socket.on('new-user-connected', (user) => {
@@ -253,6 +242,7 @@ function Home() {
       messagesWithUsers,
       setMessagesWithUsers,
       openedMessages,
+      setOpenedGroupMessages,
       typing,
       chatType,
       groupMessages,
@@ -273,9 +263,12 @@ function Home() {
             </>
           : <Loading />
         }
-        {
-          <Drawer />
-        }
+        {/*{
+          !loadingMessage ?
+            <CreateGroup />
+          : ''
+        }*/}
+        <Restriction />
       </main>
     </Context.Provider>
   )

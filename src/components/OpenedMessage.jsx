@@ -3,11 +3,17 @@ import { CgArrowLeft, CgChevronDoubleDown } from 'react-icons/cg'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { FaSpinner } from 'react-icons/fa'
 import { IoMdSend } from 'react-icons/io'
+import { HiOutlineDotsVertical } from 'react-icons/hi'
+
 import TextareaAutosize from 'react-textarea-autosize'
 import UserImage from '@/components/UserImage'
 import useMultipleLoading from '@/hooks/useMultipleLoading'
 import Message from '@/components/Message'
+import useDropdown from '@/components/Dropdown'
 import StickyDate from '@/components/StickyDate'
+import usePortal from '@/hooks/usePortal'
+import Ripple from '@/components/Ripple/Ripple'
+import ConfirmationModal from '@/modals/ConfirmationModal'
 import useSocket from '@/hooks/useSocket'
 import { useMessages } from '@/pages/Home'
 import { useStore } from '@/store/store'
@@ -124,6 +130,10 @@ function View({messages, active, unreadCount}) {
   const socket = useSocket()
   const whenVisible = useWhenVisible()
 
+  const [Dropdown, toggleDropdown] = useDropdown()
+
+  const [Modal, nav, hide] = usePortal('areyousure')
+
   const togglePanel = () => {
     if(window.innerWidth < parseInt(screens.lg)) {
       navigate('/info')
@@ -139,7 +149,6 @@ function View({messages, active, unreadCount}) {
 
   useEffect(() => {
     if(messages.skip < 20) {
-      console.log('skip', messages.unread, messages.skip)
       socket.emit('get-more-messages', messages.id, messages.skip, messages.unread, async (err, response) => {
 
         if(err) console.log(err)
@@ -167,7 +176,8 @@ function View({messages, active, unreadCount}) {
           }
         } else {
           setLoadingMessages(false)
-  
+          setDone(true)
+          
           if(isThereNotSeen()) {
             setAddWatcher(true)
           } else {
@@ -394,8 +404,6 @@ function View({messages, active, unreadCount}) {
 
     let t = Math.floor((now - lastOnline) / (1000 * 60)) // changing it in to min
 
-    console.log(t, 'tt')
-
     if(t < 3) {
       return 'just now'
     } else if (t < 60) {
@@ -406,6 +414,25 @@ function View({messages, active, unreadCount}) {
     } else { 
       return lastOnline.toDateString().toLowerCase() 
     }
+  }
+
+  const no = () => hide()
+
+  const yes = () => {
+    hide()
+    socket.emit('delete-private-message', messages.id, (err, response) => {
+      console.log(err, response)
+      if(!err) {
+        navigate('/', {
+          replace: true
+        })
+
+        setMessagesWithUsers({
+          type: 'remove',
+          data: messages.id
+        })
+      }
+    })
   }
 
   return (
@@ -428,6 +455,21 @@ function View({messages, active, unreadCount}) {
               : 'active ' + getLastOnline(messages?.user?.active) ?? 'active long time ago'
             }</span>
           </div>
+        </div> 
+        <div className='relative px-2 sm:px-0'>
+          <Ripple onClick={toggleDropdown} className='w-10 h-10 rounded-full flex items-center justify-center ml-auto'>
+            <HiOutlineDotsVertical />
+          </Ripple>
+          <Dropdown>
+            <div className='flex flex-col min-w-[10rem]'>
+              <Ripple onClick={nav} className='p-2 text-sm'>
+                <span>delete chat</span>
+              </Ripple>
+              <Modal>
+                <ConfirmationModal msg='are you sure? you will not get back your messages if you continue!' no={no} yes={yes} />
+              </Modal>
+            </div>
+          </Dropdown>
         </div>
       </div>
       <div className='relative flex-1 overflow-hidden'>

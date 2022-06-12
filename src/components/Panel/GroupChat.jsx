@@ -41,9 +41,7 @@ function GroupChat({ active }) {
           let active = isActive(el.group._id)
 
           return (
-            <Ripple style={{
-              boxShadow: '0 0 8px -4px #000'
-            }} onClick={() => navigate(`/group/${el.group._id}`)} className={`${active ? 'bg-gray-900' : 'bg-black/20'} p-2 flex gap-1 w-full cursor-pointer group hover:bg-gray-900`} color='#ddd' key={el.group._id} >
+            <Ripple onClick={() => navigate(`/group/${el.group._id}`)} className={`${active ? 'bg-gray-900' : 'border-b'} p-2 flex gap-1 w-full cursor-pointer group hover:bg-gray-900`} color='#ddd' key={el.group._id} >
               <UserImage id={el.group._id} />
               <div style={{
                   width: `calc(100% - 3rem + .25rem)`

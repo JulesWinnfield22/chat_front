@@ -7,7 +7,7 @@ function useMultipleLoading(init = true, count = 1) {
   function check() {
     length++
     console.log(length, 'length')
-    if(length >= count) {
+    if(length == count) {
       setLoading(!init)
     }
   }

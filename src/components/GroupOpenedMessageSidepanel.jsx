@@ -83,15 +83,25 @@ function View({ group, active }) {
   }
 
   return (
-    <div onClick={ev => ev.stopPropagation()} className={`${active ? 'z-20' : 'z-10'} border-l border-gray-800/40 absolute absolute-center w-full sm:max-w-[22rem] sm:w-[22rem] p-2 flex flex-col gap-2 items-center lg:w-full h-full overflow-y-auto bg-white shadow-lg`}>
+    <div onClick={ev => ev.stopPropagation()} className={`${active ? 'z-20' : 'z-10'} border-l border-gray-800/40 absolute absolute-center w-full sm:max-w-[22rem] sm:w-[22rem] p-2 flex flex-col gap-2 items-center lg:w-full h-full overflow-y-auto bg-white`}>
       <div className='w-full bg-white border border-gray-800/40 rounded-md pt-2 flex flex-col justify-center items-center gap-2'>
         <div className='flex w-full p-2 gap-2'>
           <UserImage className='bg-transparent shadow-none' id={getGroup()._id} size='xl' />
           <div className='flex-1 flex flex-col justify-end w-full pb-3'>
             <span className='text-lg font-bold text-sky-500'>
-              {getGroup()?.name} <span className='ml-2 text-xs lowercase underline underline-sky-400 text-gray-800 font-mono'>{getGroup()?.members.length} members</span>
+              {getGroup()?.name} <span className='ml-2 text-xs lowercase underline underline-sky-400 text-gray-800 font-mono'>
+              {
+                getGroup()?.members.length > 1 ?
+                  getGroup()?.members.length + ' members'
+                : getGroup()?.members.length + ' member'
+              }
+              </span>
             </span>
-            <p className='text-sm leading-none text-gray-500 w-full'>for movie lovers</p>
+            <p className='text-sm leading-none text-gray-500 w-full'>
+              {
+                getGroup()?.description || 'no description for this group'
+              }
+            </p>
           </div>
         </div>
         <div className='border-t flex flex-col w-full'>

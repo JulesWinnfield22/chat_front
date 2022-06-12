@@ -41,6 +41,12 @@ function Message({messages, group = 0}) {
     return false
   }
 
+  const getMessage = (mess) => {
+    if(group) return mess.concat().reverse()
+
+    return mess
+  }
+
   return (
     <>
       {
@@ -49,7 +55,7 @@ function Message({messages, group = 0}) {
             <div key={createdAt} className={`flex gap-1 ${isThisMe(from) ? 'justify-end' : 'justify-start'}`}>
               <div className={`flex-1 flex flex-col ${isThisMe(from) ? 'items-end order-1' : 'items-start order-2'}`} >
                 {
-                  mess.map(({message, from, seen, _id, createdAt}) => {
+                  getMessage(mess).map(({message, from, seen, _id, createdAt}) => {
                     return (
                       <p id={_id} data-createdat={createdAt} className={`${!isThisMe(from) && group ? (gNotSeen(createdAt) ? 'not-seen' : '') : !seen && !group ? 'not-seen' : ''} ${ isThisMe(from) ? 'rounded-l-lg rounded-tr-lg bg-gray-800 text-gray-300' : 'rounded-r-lg rounded-tl-lg bg-gray-300 text-gray-900'} max-w-[80%] whitespace-normal break-all px-2 py-1 mt-1 tracking-wide text-base`} key={_id + ' ' + message} >
                         {message}

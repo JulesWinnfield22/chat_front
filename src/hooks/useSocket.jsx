@@ -7,7 +7,7 @@ function useSocket() {
   const { auth } = useStore()
 
   if(!socket) {
-    socket = io('http://192.168.1.11:3001/', {
+    socket = io(location.origin.replace(/:(\d+)$/, ':3001'), {
       auth: {
         accessToken: auth.accessToken
       },

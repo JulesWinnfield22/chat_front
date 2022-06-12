@@ -46,7 +46,7 @@ function Ripple({ children, type = 'div', color = 'red', className, ...rest }) {
     type,
     {
       ref: ripple,
-      className: `ripple ${className}`,
+      className: `ripple cursor-pointer ${className}`,
       ...rest
     },
     children

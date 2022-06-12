@@ -11,6 +11,12 @@ function groupReducer(state, payload) {
       return add_users([...state], payload.data)
     case 'update_seen': 
       return seen([...state], payload.data)
+    case 'remove':
+      return [...state].filter(el => el.id != payload.data)
+    case 'remove_member':
+      return removemember([...state], payload.data)
+    case 'add_member':
+      return addmember([...state], payload.data)
     case 'member-online':
       return memberOnline([...state], payload.data)
     case 'member-offline':
@@ -20,6 +26,28 @@ function groupReducer(state, payload) {
     default:
       return state
   }
+}
+
+function addmember(state, data) {
+  let group = state.find(el => el.id == data.id)
+
+  if(!group) return state
+
+  group.members = data.members
+  group.group.members = group.members.map(el => el._id)
+
+  return state
+}
+
+function removemember(state, data) {
+  let group = state.find(el => el.id == data.id)
+
+  if(!group) return state
+
+  group.members = group.members.filter(el => el._id != data.member)
+  group.group.members = group.members.map(el => el._id)
+
+  return state
 }
 
 function memberOffline(state, data) {

@@ -26,9 +26,41 @@
   * {
     scrollbar-width: none;
   }
+
+  *:focus {
+    box-shadow: 0 0 0px 1px rgba(56, 189, 248, .5);
+    outline: none;
+  }
 }
 
 @layer components {
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    background-color: #0009;
+    display: grid;
+    place-items: center;
+  }
+
+  .active.modal > :first-child {
+    position: relative;
+    border-radius: 8px;
+  }
+
+  .active.modal > :first-child::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+    height: 70%;
+    border-radius: 10px;
+    background: #0009;
+    width: 125%;
+    pointer-events: none;
+  }
 
   .skeleton-bar {
     @apply relative overflow-hidden;

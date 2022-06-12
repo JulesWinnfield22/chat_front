@@ -9,11 +9,7 @@ function UserImageWithMessage({active, user, unread, message, online = false, cl
 	const { typing } = useMessages()
 	return (
 		<Ripple
-			// type='a'
-			style={{
-				boxShadow: '0 0 7px -4px #000'
-			}}
-			className={`${active ? 'bg-gray-900' : 'bg-black/20'} group 
+			className={`${active ? 'bg-gray-900' : ''} group 
 			cursor cursor-pointer w-full hover:bg-gray-900 flex items-center p-2 flex-grow-0 ${className}`}
 			onClick={
 				() => !active ? navigate(`/message/${user._id}`, {

@@ -74,7 +74,6 @@ function Login() {
         signal: controller ? controller.signal: null
       })
       
-      console.log(response?.data)
       if(response?.data) {
         setAuth({
           type: 'initial',
@@ -133,7 +132,7 @@ function Login() {
                   {
                     usernameOrEmailError &&
                     <p className="px-1 text-sm text-red-500 lowercase">{usernameOrEmailError}</p>
-                  }       
+                  }   
                 </div>
                 <div className='w-full flex flex-col self-start flex-1'>
                   <label className={`${passwordError ? 'border-red-500 error' : 'focus-within:border-sky-300 '} form-input-label`}>
