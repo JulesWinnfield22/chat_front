@@ -9,9 +9,11 @@ function messageReducer(state, payload) {
     case 'offline':
       return offline([...state], payload.data)
     case 'remove':
-      return [...state].filter(el => el.id != payload.data)
+      return remove([...state], payload.data)
     case 'message-delevered':
       return messageDelevered([...state], payload.data)
+    case 'remove_my_messages':
+      return removeMyMessages([...state], payload.data)
     case 'update_seen':
       return update_seen([...state], payload.data.id, payload.data.createdAt, payload.data.confirmation ?? false)
     case 'push':
@@ -19,6 +21,26 @@ function messageReducer(state, payload) {
     default:
       return state
   }
+}
+
+function remove(state, id) {
+  let found = state.find(el => el.id == id)
+
+  if(!found) return state
+
+  found.messages = []
+  
+  return state
+}
+
+function removeMyMessages(state, id) {
+  let messages = state.find(el => el.id == id)
+
+  if(!messages) return state
+
+  messages.messages = messages.messages.filter(el => el.from != id)  
+
+  return state
 }
 
 function merge(state, data) {
@@ -173,5 +195,6 @@ export default messageReducer
 export {
   merge,
   push,
-  messageDelevered
+  messageDelevered,
+  remove
 }

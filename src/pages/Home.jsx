@@ -117,6 +117,13 @@ function Home() {
       })
     })
 
+    socket.on('deleted-both-messages', (id) => {
+      setMessagesWithUsers({
+        type: 'remove_my_messages',
+        data: id
+      })
+    })
+
     socket.on('private-message', message => {
       setMessagesWithUsers({
         type: 'push',
@@ -128,6 +135,14 @@ function Home() {
       setGroupMessages({
         type: 'push',
         data: {id: message.to, messages: message}
+      })
+    })
+
+    socket.on('group-join-accepted', (messages) => {
+      console.log('why!')
+      setGroupMessages({
+        type: 'initial',
+        data: messages
       })
     })
 
@@ -147,6 +162,16 @@ function Home() {
         data: {
           group,
           member: id
+        }
+      })
+    })
+
+    socket.on('group-updated', (id, group) => {
+      setGroupMessages({
+        type: 'update_group',
+        data: {
+          id,
+          group
         }
       })
     })
@@ -263,12 +288,6 @@ function Home() {
             </>
           : <Loading />
         }
-        {/*{
-          !loadingMessage ?
-            <CreateGroup />
-          : ''
-        }*/}
-        <Restriction />
       </main>
     </Context.Provider>
   )

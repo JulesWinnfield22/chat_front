@@ -1,0 +1,39 @@
+  .flex-center {
+    @apply flex justify-center items-center
+  }
+
+  .tab-items {
+    @apply flex relative overflow-x-auto border-b text-sm overflow-y-visible
+  }
+
+  .long-tab-items > *:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    height: 50%;
+    width: 5px;
+    border-right: 1px solid #0003;
+  }
+
+  .long-tab-items::after {
+    content: '';
+    position: absolute;
+    top: 85%;
+    width: var(--width);
+    height: 5px;
+    border-bottom: 2px solid #82bbee;
+    transform: translateX(var(--offsetX));
+    transition: all .3s linear;
+  }
+
+  .short-tab-items::after {
+    content: '';
+    position: absolute;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: blue;
+    z-index: -1;
+    transform: translateX(var(--offsetX));
+    transition: all .3s linear;
+  }

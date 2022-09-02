@@ -12,18 +12,12 @@ import axios from "@/api/axios"
 function Drawer() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const [show, setShow] = useState(false)
   const { auth } = useStore()
-  const [Modal, nav, hide] = usePortal('creategroup')
-
-
-  useEffect(() => {
-    if(pathname == '/drawer') {
-      setShow(true)
-    } else {
-      setShow(false)
+  const [Modal, nav, hide] = usePortal('creategroup', {
+    urlOptions: {
+      replace: true
     }
-  }, [pathname])
+  })
 
   async function logout() {
     try {
@@ -55,37 +49,32 @@ function Drawer() {
 
   return (
     <>
-      {
-        show ?
-          <div onClick={() => navigate(-1)} className='fixed z-50 top-0 left-0 h-screen w-full bg-black/50'>
-            <div onClick={(ev) => ev.stopPropagation()} className='h-full overflow-y-auto w-80 bg-gray-800 flex flex-col'>
-              <div className='p-2 flex gap-1 bg-black/50'>
-                <UserImage id={auth.user._id} size='2xl' className='bg-transparent' />
-                <div className='p-4 flex-1 text-gray-300 text-sm font-semibold flex flex-col justify-end'>
-                  <p>{ auth.user.firstName } { auth.user.lastName }</p>
-                  <p className='text-sky-500'>{ auth.user.username }</p>
-                </div>
-              </div>
-              <Ripple color='#ddd8' type='div' className='mt-1 gap-2 hover:bg-black/50 cursor-pointer p-2 text-base font-semibold text-gray-300 flex items-center'>  
-                <FaCog className='w-6 text-xl' />
-                Settings
-              </Ripple>
-              <Ripple onClick={nav} color='#ddd8' type='div' className='mt-1 gap-2 hover:bg-black/50 cursor-pointer p-2 text-base font-semibold text-gray-300 flex items-center'>  
-                <MdGroupAdd className='w-6 text-2xl' />
-                Create Group
-                <Modal>
-                  <CreateGroup />
-                </Modal>
-              </Ripple>
-              <Ripple onClick={logout} color='#ddd8' type='div' className='mt-1 gap-2 hover:bg-black/50 cursor-pointer p-2 text-base font-semibold text-gray-300 flex items-center'>  
-                <FaSignOutAlt className='w-6 text-xl text-red-500' />
-                Logout
-              </Ripple>
-
+      <div onClick={() => navigate(-1)} className='h-screen w-full'>
+        <div onClick={(ev) => ev.stopPropagation()} className='h-full overflow-y-auto w-80 bg-gray-800 flex flex-col'>
+          <div className='p-2 flex gap-1 bg-black/50'>
+            <UserImage id={auth.user._id} size='2xl' className='bg-transparent' />
+            <div className='p-4 flex-1 text-gray-300 text-sm font-semibold flex flex-col justify-end'>
+              <p>{ auth.user.firstName } { auth.user.lastName }</p>
+              <p className='text-sky-500'>{ auth.user.username }</p>
             </div>
           </div>
-        : ''
-      }
+          <Ripple color='#ddd8' type='div' className='mt-1 gap-2 hover:bg-black/50 cursor-pointer p-2 text-base font-semibold text-gray-300 flex items-center'>  
+            <FaCog className='w-6 text-xl' />
+            Settings
+          </Ripple>
+          <Ripple onClick={nav} color='#ddd8' type='div' className='mt-1 gap-2 hover:bg-black/50 cursor-pointer p-2 text-base font-semibold text-gray-300 flex items-center'>  
+            <MdGroupAdd className='w-6 text-2xl' />
+            Create Group
+            <Modal>
+              <CreateGroup />
+            </Modal>
+          </Ripple>
+          <Ripple onClick={logout} color='#ddd8' type='div' className='mt-1 gap-2 hover:bg-black/50 cursor-pointer p-2 text-base font-semibold text-gray-300 flex items-center'>  
+            <FaSignOutAlt className='w-6 text-xl text-red-500' />
+            Logout
+          </Ripple>
+        </div>
+      </div>
     </>
     
   )

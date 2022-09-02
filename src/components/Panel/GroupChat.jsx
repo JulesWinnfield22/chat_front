@@ -38,11 +38,11 @@ function GroupChat({ active }) {
       {/* <p className='uppercase px-2 sm:p-0 sm:py-1'>groups</p> */}
       {
         groupMessages.map(el => {
-          let active = isActive(el.group._id)
+          let active = isActive(el.id)
 
           return (
-            <Ripple onClick={() => navigate(`/group/${el.group._id}`)} className={`${active ? 'bg-gray-900' : 'border-b'} p-2 flex gap-1 w-full cursor-pointer group hover:bg-gray-900`} color='#ddd' key={el.group._id} >
-              <UserImage id={el.group._id} />
+            <Ripple onClick={() => navigate(`/group/${el.id}`)} className={`${active ? 'bg-gray-900' : 'border-b'} p-2 flex gap-1 w-full cursor-pointer group hover:bg-gray-900`} color='#ddd' key={el.id} >
+              <UserImage id={el.id} />
               <div style={{
                   width: `calc(100% - 3rem + .25rem)`
                 }} className='flex-1 flex flex-col py-1'>

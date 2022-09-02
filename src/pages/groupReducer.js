@@ -1,4 +1,4 @@
-import { merge, push, messageDelevered } from './messageReducer'
+import { merge, push, messageDelevered, remove } from './messageReducer'
 
 function groupReducer(state, payload) {
   switch(payload.type) {
@@ -11,12 +11,22 @@ function groupReducer(state, payload) {
       return add_users([...state], payload.data)
     case 'update_seen': 
       return seen([...state], payload.data)
+    case 'update_group': 
+      return updateGroup([...state], payload.data)
     case 'remove':
-      return [...state].filter(el => el.id != payload.data)
+      return remove([...state], payload.data)
     case 'remove_member':
       return removemember([...state], payload.data)
     case 'add_member':
       return addmember([...state], payload.data)
+    case 'remove_join_request':
+      return removejoinRequest([...state], payload.data)
+    case 'add_correct_answers':
+      return add_correct_answers([...state], payload.data)
+    case 'add_questionnaire_answers':
+      return add_questionnaire_answers([...state], payload.data)
+    case 'add_join_requests':
+      return add_join_requests([...state], payload.data)
     case 'member-online':
       return memberOnline([...state], payload.data)
     case 'member-offline':
@@ -28,13 +38,67 @@ function groupReducer(state, payload) {
   }
 }
 
+function updateGroup(state, data) {
+  let group = state.find(el => el.id == data.id) 
+
+  if(!group) return state
+
+  group.group.name = data.group.name
+  group.group.description = data.group.description
+  group.group.membersNickname = data.group.membersNickname
+  group.group.type = data.group.type
+  group.group.restriction = data.group.restriction ? data.group.restriction : group.group.restriction
+
+  return state
+}
+
+function removejoinRequest(state, data) {
+  let group = state.find(el => el.id == data.id)
+
+  if(!group) return state
+
+  group.joinRequests = group.joinRequests.filter(el => el._id != data.member)
+
+  return state
+}
+
+function add_join_requests(state, data) {
+  let group = state.find(el => el.id == data.id)
+
+  if(!group) return state
+
+  group.joinRequests = data.joinRequests
+
+  return state
+}
+
+function add_correct_answers(state, data) {
+  const group = state.find(el => el.id == data.id)
+
+  if(!group) return state
+
+  group.correctAnswers = data.answers || []
+
+  return state
+}
+
+function add_questionnaire_answers(state, data) {
+  let group = state.find(el => el.id == data.id)
+
+  if(!group) return state
+
+  group.questionnaireAnswers = data.answers || []
+
+  return state
+}
+
 function addmember(state, data) {
   let group = state.find(el => el.id == data.id)
 
   if(!group) return state
 
-  group.members = data.members
-  group.group.members = group.members.map(el => el._id)
+  group.members.push(data.member)
+  group.group.members.push(data.member._id)
 
   return state
 }
@@ -44,8 +108,8 @@ function removemember(state, data) {
 
   if(!group) return state
 
-  group.members = group.members.filter(el => el._id != data.member)
-  group.group.members = group.members.map(el => el._id)
+  group.members = group.members.filter(el => el._id != data.member._id)
+  group.group.members = group.group.members.filter(el => el != data.member._id)
 
   return state
 }

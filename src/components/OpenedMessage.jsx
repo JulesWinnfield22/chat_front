@@ -9,6 +9,7 @@ import TextareaAutosize from 'react-textarea-autosize'
 import UserImage from '@/components/UserImage'
 import useMultipleLoading from '@/hooks/useMultipleLoading'
 import Message from '@/components/Message'
+import MessageDropdown from '@/components/MessageDropdown'
 import useDropdown from '@/components/Dropdown'
 import StickyDate from '@/components/StickyDate'
 import usePortal from '@/hooks/usePortal'
@@ -27,7 +28,9 @@ function isThereNotSeen() {
 
 function showNotSeenMessage(el, options) {
   let m = document.querySelector('.not-seen-messages')
-  if(!m && el) {
+  if(el) {
+    if(m) m.remove()
+      
     let div = document.createElement('div')
     let p = document.createElement('p')
     div.className = 'not-seen-messages min-h-[2rem] w-full flex justify-center z-20 items-center'
@@ -304,6 +307,18 @@ function View({messages, active, unreadCount}) {
   }
 
   useEffect(() => {
+    if(active) {
+      let lastNotSeen = getLastSeen()
+      const lastSeen = openedMessage.current.querySelector(`p[data-createdat='${lastNotSeen}']`)
+      const notSeen = openedMessage.current.querySelectorAll('.not-seen')
+      let message = showNotSeenMessage(lastSeen)
+
+      message?.scrollIntoView()
+      if(notSeen.length > 1 && lastSeen) setShowGoToBottom(true)
+    }
+  }, [active])
+
+  useEffect(() => {
     if(addWatcher) {
       let lastNotSeen = getLastSeen()
       const lastSeen = openedMessage.current.querySelector(`p[data-createdat='${lastNotSeen}']`)
@@ -416,25 +431,6 @@ function View({messages, active, unreadCount}) {
     }
   }
 
-  const no = () => hide()
-
-  const yes = () => {
-    hide()
-    socket.emit('delete-private-message', messages.id, (err, response) => {
-      console.log(err, response)
-      if(!err) {
-        navigate('/', {
-          replace: true
-        })
-
-        setMessagesWithUsers({
-          type: 'remove',
-          data: messages.id
-        })
-      }
-    })
-  }
-
   return (
     <div
       className={`${active ? 'opened-message z-20' : 'hidden z-10'} w-full flex flex-col h-full bg-white absolute absolute-center`}
@@ -456,21 +452,7 @@ function View({messages, active, unreadCount}) {
             }</span>
           </div>
         </div> 
-        <div className='relative px-2 sm:px-0'>
-          <Ripple onClick={toggleDropdown} className='w-10 h-10 rounded-full flex items-center justify-center ml-auto'>
-            <HiOutlineDotsVertical />
-          </Ripple>
-          <Dropdown>
-            <div className='flex flex-col min-w-[10rem]'>
-              <Ripple onClick={nav} className='p-2 text-sm'>
-                <span>delete chat</span>
-              </Ripple>
-              <Modal>
-                <ConfirmationModal msg='are you sure? you will not get back your messages if you continue!' no={no} yes={yes} />
-              </Modal>
-            </div>
-          </Dropdown>
-        </div>
+        <MessageDropdown user={messages?.user} />
       </div>
       <div className='relative flex-1 overflow-hidden'>
         <div ref={openedMessage} className='w-full h-full px-2 py-2 flex flex-col-reverse gap-2 overflow-y-scroll'>

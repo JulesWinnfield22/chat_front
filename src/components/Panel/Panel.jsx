@@ -22,7 +22,10 @@ function Panel() {
   const { auth } = useStore()
   const activeTabClass = 'bg-gray-800 text-sky-300 shadow-md'
     
-  const [Modal, nav, hide] = usePortal('drawer')
+  const [Modal, nav, hide] = usePortal('drawer', {
+    childPosition: 'left',
+    urlOptions: {}
+  })
 
   const group_unread = useMemo(() => {
     return groupMessages.reduce((total, payload) => {

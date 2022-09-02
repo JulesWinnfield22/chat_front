@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 
@@ -13,13 +13,35 @@ function* getIndex() {
 
 const index = getIndex()
 
-function usePortal(url) {
+const opts = {
+  childPosition: 'center',
+  urlOptions: {
+    replace: false
+  }
+}
+
+function getChildPosition(pos) {
+  switch(pos) {
+    case 'left':
+      return 'start'
+    default:
+      return 'center'
+  }
+}
+
+function usePortal(url, options) {
   const navigate = useNavigate()
   const {pathname} = useLocation()
+  const [showModal, setShowModal] = useState(false)
+
+  options = {
+    ...opts,
+    ...options,
+  }
 
   function nav(ev) {
     ev?.stopPropagation()
-    navigate(`/${url}`)
+    navigate(`/${url}`, options.urlOptions)
   }
 
   function hide(ev, back) {
@@ -30,23 +52,22 @@ function usePortal(url) {
       navigate(ev || -1)
     }
   }
+
+  useEffect(() => {
+    rootModal?.querySelector(`.modal.active > *`)?.focus()
+  }, [showModal])
+
+  useEffect(() => {
+    if(`/${url}` == pathname) {
+      setShowModal(true)
+    } else {
+      setShowModal(false)
+    }
+  }, [pathname])
   
   function Modal({ children }) {
-    const [showModal, setShowModal] = useState(false)
     const {pathname} = useLocation()
     const { value } = index.next()
-
-    useEffect(() => {
-      rootModal?.querySelector(`.modal.active > *`)?.focus()
-    }, [showModal])
-
-    useEffect(() => {
-      if(`/${url}` == pathname) {
-        setShowModal(true)
-      } else {
-        setShowModal(false)
-      }
-    }, [pathname])
 
     return (
       <>
@@ -57,7 +78,8 @@ function usePortal(url) {
               onClick={hide} 
               style={{
                 zIndex: value,
-                display: showModal ? 'grid' : 'none'
+                display: showModal ? 'grid' : 'none',
+                placeItems: showModal && getChildPosition(options.childPosition)
               }}
               className={`${showModal ? 'active' : ''} modal`}
             >

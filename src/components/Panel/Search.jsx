@@ -1,8 +1,11 @@
 import useSocket from '@/hooks/useSocket'
 import UserImage from '@/components/UserImage'
+import Restriction from '@/components/Restriction'
 import { useStore } from '@/store/store'
 import Ripple from '@/components/Ripple/Ripple'
 import {useMessages} from '@/pages/Home'
+
+import usePortal from '@/hooks/usePortal'
 
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -12,6 +15,12 @@ function Search({active, val}) {
   const navigate = useNavigate()
 	const socket = useSocket()
 	const { auth } = useStore()
+
+	let urlOptions = {}
+
+	const [Modal, nav, hide] = usePortal('restriction', {
+    urlOptions: urlOptions
+  })
 
   function openMessage(user) {
   	setMessagesWithUsers({
@@ -39,11 +48,17 @@ function Search({active, val}) {
 
   		})
   	} else {
-  		navigate('/restriction', {
-  			state: {
-  				group
-  			}
-  		})
+
+  		urlOptions.state = {
+  			group
+  		}
+
+  		nav()
+  		// navigate('/restriction', {
+  		// 	state: {
+  		// 		group
+  		// 	}
+  		// })
   	}
 
   }
@@ -198,6 +213,9 @@ function Search({active, val}) {
 									)
 								})
 							}
+							<Modal>
+								<Restriction />
+							</Modal>
 						</>
 					: ''
 				}

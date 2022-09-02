@@ -1,13 +1,17 @@
 import { useMessages } from '@/pages/Home'
 import { formatGroupMessagesByTime } from '@/helper/helper'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useState, useEffect, useRef, useLayoutEffect } from 'react'
+import { useState, useEffect, useRef, useLayoutEffect, useCatch } from 'react'
 import { screens } from 'tailwindcss/defaultTheme'
 import { CgArrowLeft, CgChevronDoubleDown } from 'react-icons/cg'
 import { HiOutlineDotsVertical } from 'react-icons/hi'
 import UserImage from '@/components/UserImage'
 import Message from '@/components/Message'
 import useDropdown from '@/components/Dropdown'
+import CreateGroup from '@/components/CreateGroup'
+import usePortal from '@/hooks/usePortal'
+import ConfirmationModal from '@/modals/ConfirmationModal'
+import GroupDropdown from '@/components/GroupDropdown'
 import Ripple from '@/components/Ripple/Ripple'
 import StickyDate from '@/components/StickyDate'
 import TextareaAutosize from 'react-textarea-autosize'
@@ -131,6 +135,8 @@ function View({groupId, messages, active, unreadCount}) {
   const [doneWatch, setDoneWatch] = useState(false)
   const navigate = useNavigate()
   const [Dropdown, toggleDropdown] = useDropdown()
+  const [ Modal, nav, hide ] = usePortal('deletegroup')
+  const [ EditGroupModal, editGroupNav, hideEditGroup ] = usePortal('editgroup/'+groupId)
 
   useEffect(() => {
     if(active) {
@@ -441,60 +447,22 @@ function View({groupId, messages, active, unreadCount}) {
     }
   }
 
-  function joinOrLeave() {
-    let member = messages.group.members.includes(auth.user._id)
 
-    socket.emit('join', groupId, '', (err, response) => {
-      if(member) {
-        setAuth({
-          type: 'update',
-          data: {
-            name: 'groups',
-            value: response?.groups
-          }
+  function deleteGroup(id) {
+    hide()
+    socket.emit('delete-group', id, (err, response) => {
+      console.log(err, response)
+      if(!err) {
+        navigate('/', {
+          replace: true
         })
 
-
-        if(messages.group.restriction) {
-          navigate('/', {
-            replace: true
-          })
-
-          let r = openedGroupMessages.filter(el => el.id != groupId)
-          setOpenedGroupMessages(r)
-          setGroupMessages({
-            type: 'remove',
-            data: groupId
-          })
-        } else {
-          setGroupMessages({
-            type: 'remove_member',
-            data: {
-              id: groupId,
-              member: auth.user._id
-            }
-          })
-        }
-      } else {
-        setAuth({
-          type: 'update',
-          data: {
-            name: 'groups',
-            value: [...(new Set([...auth.user.groups, {id: groupId, lastSeenMessage: Date.now(), pending: false}]))]
-          }
-        })
-
-        
         setGroupMessages({
-          type: 'add_member',
-          data: {
-            id: groupId,
-            members: response.members
-          }
+          type: 'remove',
+          data: id
         })
       }
     })
-
   }
 
   return (
@@ -521,27 +489,13 @@ function View({groupId, messages, active, unreadCount}) {
               } 
               {
                 messages.online && messages.online.length? 
-                  <span> {messages.online.length} {messages.online.length > 1 ? messages.group.membersnickName || '' + ' are' : ''} online</span>
+                  <span> {messages.online.length} {messages.online.length > 1 ? (messages.group.membersNickname || '') + ' are' : ''} online</span>
                 : ''
               } 
             </span>
           </div>
         </div>
-        <div className='relative'>
-          <Ripple onClick={toggleDropdown} className='w-10 h-10 dropdown-handler rounded-full flex items-center justify-center ml-auto'>
-            <HiOutlineDotsVertical />
-          </Ripple>
-          <Dropdown>
-            <div className='flex  min-w-[10rem]'>
-              <Ripple onClick={joinOrLeave} className='p-2 w-full text-sm hover:bg-gray-800 hover:text-sky-400'>
-                {
-                  messages.group.members.includes(auth.user._id) ?
-                  'leave group' : 'join'
-                }
-              </Ripple>
-            </div>
-          </Dropdown>
-        </div>
+        <GroupDropdown group={messages.group} />
       </div>
       <div className='relative flex-1 overflow-hidden'>
         <div ref={openedGroupMessage} className='w-full h-full px-2 py-2 flex flex-col-reverse gap-2 overflow-y-scroll'>

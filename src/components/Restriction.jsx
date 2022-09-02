@@ -20,7 +20,6 @@ function Manual({group}) {
 
 	function join() {
 		socket.emit('join', group._id, '', (err, response) => {
-			console.log(err, response)
 			if(!err) {
 				setAuth({
 					type: 'update',
@@ -37,7 +36,7 @@ function Manual({group}) {
 	}
 
 	return (
-		<div onClick={ev => ev.stopPropagation()} className='flex flex-col w-full h-full bg-white sm:w-[22rem]'>
+		<div className='flex flex-col w-full h-screen bg-white sm:w-[22rem]'>
 			<p className='h-12 flex px-2 font-medium items-center bg-gray-800 text-sky-400 '>
 				Restriction
 			</p>
@@ -106,7 +105,7 @@ function CorrectAnswer({ group = {} }) {
 	}
 
 	return (
-		<form onClick={ev => ev.stopPropagation()} onSubmit={(ev) => ev.preventDefault() } className='flex flex-col w-full h-full bg-white sm:w-[22rem]'>
+		<form  onSubmit={(ev) => ev.preventDefault() } className='flex flex-col w-full h-screen bg-white sm:w-[22rem]'>
 			<p className='h-12 flex px-2 font-medium items-center bg-gray-800 text-sky-400 '>
 				Restriction
 			</p>
@@ -175,7 +174,7 @@ function Questionnaire({group = {}}) {
 	}
 
 	return (
-		<form onSubmit={(ev) => ev.preventDefault()} onClick={ev => ev.stopPropagation()} className='flex flex-col w-full h-full bg-white sm:w-[22rem]'>
+		<form onSubmit={(ev) => ev.preventDefault()} className='flex flex-col w-full h-screen bg-white sm:w-[22rem]'>
 			<p className='h-12 flex px-2 font-medium items-center bg-gray-800 text-sky-400 '>
 				Restriction
 			</p>
@@ -239,38 +238,32 @@ function Restriction() {
   useEffect(() => {
     if(pathname == '/restriction') {
   		if(!state || !state?.group) navigate(-1)
-      setShow(true)
-    } else {
-      setShow(false)
     }
   }, [pathname])
 
-
+  // if(pathname == '/restriction') {
+		// if(!state || !state?.group) navigate(-1)
+  // } else {
   return (
   	<>
-	  	{
-	  		show ?
-	  			<div onClick={() => navigate(-1)} className='fixed z-50 top-0 left-0 h-screen w-full flex justify-center items-center bg-black/50'>
-	  				{
-	  					state?.group?.restriction?.type == 'questionnaire' ?
-	  						<Questionnaire group={state.group} />
-	  					: ''
-	  				}
-	  				{
-	  					state?.group?.restriction?.type == 'correctAnswer' ?
-	  						<CorrectAnswer group={state.group} />
-	  					: ''
-	  				}
-	  				{
-	  					state?.group?.restriction?.type == 'manual' ?
-	  						<Manual group={state.group} />
-	  					: ''
-	  				}
-					</div>
+			{
+				state?.group?.restriction?.type == 'questionnaire' ?
+					<Questionnaire group={state.group} />
 				: ''
-	  	}
+			}
+			{
+				state?.group?.restriction?.type == 'correctAnswer' ?
+					<CorrectAnswer group={state.group} />
+				: ''
+			}
+			{
+				state?.group?.restriction?.type == 'manual' ?
+					<Manual group={state.group} />
+				: ''
+			}
   	</>
   )
+  // }
 }
 
 export default Restriction
